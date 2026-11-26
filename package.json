@@ -1,0 +1,35 @@
+{
+  "name": "lotcheck",
+  "version": "0.1.0",
+  "description": "Offline position-size calculator for beginner traders, with an optional loss-room cap for accounts with loss limits.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/core/index.js"
+  },
+  "files": [
+    "src/core",
+    "dist/lotcheck.html",
+    "dist/SHA256SUMS",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.js",
+    "check": "node scripts/build.js && node --test test/*.test.js"
+  },
+  "keywords": [
+    "position-size",
+    "lot-size",
+    "risk-management",
+    "forex",
+    "trading",
+    "calculator",
+    "offline"
+  ]
+}

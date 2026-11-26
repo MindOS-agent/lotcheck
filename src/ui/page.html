@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Lotcheck</title>
+<style>{{STYLE}}</style>
+</head>
+<body>
+<header class="page-header">
+  <h1>Lotcheck</h1>
+  <p class="lead">Work out your position size before you trade. Runs on your device. Nothing is sent anywhere.</p>
+  <p class="version">Version {{VERSION}}</p>
+</header>
+<noscript><p class="stop-box">Lotcheck needs JavaScript to work. It still sends nothing anywhere.</p></noscript>
+<main id="main">
+
+<section class="card step" id="card-account" aria-labelledby="t-account">
+  <h2 id="t-account">Your account</h2>
+  <p class="explain">Tell Lotcheck how much money is in the account and how much you accept to lose on one trade.</p>
+  <div class="grid">
+<div class="field" id="w-accountCurrency">
+  <label for="f-accountCurrency" id="l-accountCurrency">Account currency</label>
+  <input id="f-accountCurrency" data-key="accountCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-accountCurrency e-accountCurrency" maxlength="5">
+  <p class="hint" id="h-accountCurrency">The currency of your account balance, for example EUR. 3 letters.</p>
+  <p class="error" id="e-accountCurrency" role="alert" hidden></p>
+</div>
+<div class="field" id="w-balance">
+  <label for="f-balance" id="l-balance">Account balance</label>
+  <input id="f-balance" data-key="balance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-balance e-balance">
+  <p class="hint" id="h-balance">How much money is in the account. Use a dot for decimals, no thousands separators.</p>
+  <p class="error" id="e-balance" role="alert" hidden></p>
+</div>
+  </div>
+<fieldset class="toggle" id="fs-riskMode">
+  <legend>Risk per trade</legend>
+  <div class="choices">
+    <label class="choice" for="risk-percent"><input type="radio" id="risk-percent" name="riskMode" value="percent" data-key="riskMode"> <span id="risk-percent-text">Percent of balance</span></label>
+    <label class="choice" for="risk-amount"><input type="radio" id="risk-amount" name="riskMode" value="amount" data-key="riskMode"> <span id="risk-amount-text">Fixed amount</span></label>
+  </div>
+</fieldset>
+  <div class="grid">
+<div class="field" id="w-riskValue">
+  <label for="f-riskValue" id="l-riskValue">Risk per trade (percent of balance)</label>
+  <input id="f-riskValue" data-key="riskValue" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-riskValue e-riskValue">
+  <p class="hint" id="h-riskValue">The most you accept to lose on this trade if your stop-loss is hit. The 1 is only an example. Enter your own number.</p>
+  <p class="error" id="e-riskValue" role="alert" hidden></p>
+</div>
+  </div>
+  <details class="more">
+    <summary>What is this?</summary>
+    <p>Risk per trade is the money you accept to lose if the price reaches your stop-loss. Lotcheck turns it into a lot size. Use percent to risk a share of your balance each time, or a fixed amount if you prefer a set sum.</p>
+  </details>
+</section>
+
+<section class="card step" id="card-instrument" aria-labelledby="t-instrument">
+  <h2 id="t-instrument">What you trade</h2>
+  <p class="explain">Pick the kind of instrument, then enter its numbers. These numbers decide how much one lot is worth.</p>
+  <div class="field" id="w-instrumentType">
+    <label for="f-instrumentType">Instrument type</label>
+    <select id="f-instrumentType" data-key="instrumentType" aria-describedby="h-instrumentType">
+      <option value="forex">Forex pair</option>
+      <option value="index">Index</option>
+      <option value="metal">Metal or commodity</option>
+      <option value="crypto">Crypto</option>
+    </select>
+    <p class="hint" id="h-instrumentType">This only changes the help and the checks shown below.</p>
+  </div>
+  <div class="grid">
+<div class="field" id="w-symbol">
+  <label for="f-symbol" id="l-symbol">Symbol (a name for you)</label>
+  <input id="f-symbol" data-key="symbol" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-symbol c-symbol e-symbol" maxlength="20">
+  <p class="hint" id="h-symbol">For a forex pair, a 6-letter symbol such as EURUSD fills in typical values below.</p>
+  <p class="symbol-caution" id="c-symbol" hidden></p>
+  <p class="error" id="e-symbol" role="alert" hidden></p>
+</div>
+<div class="field" id="w-baseCurrency">
+  <label for="f-baseCurrency" id="l-baseCurrency">Base currency</label>
+  <input id="f-baseCurrency" data-key="baseCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-baseCurrency t-baseCurrency e-baseCurrency" maxlength="5">
+  <p class="hint" id="h-baseCurrency">The first currency of the pair. For EURUSD it is EUR.</p>
+  <p class="tag" id="t-baseCurrency" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-baseCurrency" role="alert" hidden></p>
+</div>
+<div class="field" id="w-quoteCurrency">
+  <label for="f-quoteCurrency" id="l-quoteCurrency">Quote currency</label>
+  <input id="f-quoteCurrency" data-key="quoteCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-quoteCurrency t-quoteCurrency e-quoteCurrency" maxlength="5">
+  <p class="hint" id="h-quoteCurrency">The currency profit and loss is counted in. For EURUSD it is USD.</p>
+  <p class="tag" id="t-quoteCurrency" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-quoteCurrency" role="alert" hidden></p>
+</div>
+<div class="field" id="w-contractSize">
+  <label for="f-contractSize" id="l-contractSize">Contract size</label>
+  <input id="f-contractSize" data-key="contractSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-contractSize t-contractSize e-contractSize">
+  <p class="hint" id="h-contractSize">How many units are in 1.00 lot.</p>
+  <p class="tag" id="t-contractSize" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-contractSize" role="alert" hidden></p>
+</div>
+<div class="field" id="w-pipSize">
+  <label for="f-pipSize" id="l-pipSize">Pip or point size</label>
+  <input id="f-pipSize" data-key="pipSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-pipSize t-pipSize e-pipSize">
+  <p class="hint" id="h-pipSize">The price move you call one pip or point, for example 0.0001.</p>
+  <p class="tag" id="t-pipSize" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-pipSize" role="alert" hidden></p>
+</div>
+<div class="field" id="w-minLot">
+  <label for="f-minLot" id="l-minLot">Minimum lot</label>
+  <input id="f-minLot" data-key="minLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-minLot t-minLot e-minLot">
+  <p class="hint" id="h-minLot">The smallest size your broker allows.</p>
+  <p class="tag" id="t-minLot" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-minLot" role="alert" hidden></p>
+</div>
+<div class="field" id="w-lotStep">
+  <label for="f-lotStep" id="l-lotStep">Lot step</label>
+  <input id="f-lotStep" data-key="lotStep" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-lotStep t-lotStep e-lotStep">
+  <p class="hint" id="h-lotStep">Sizes must be a multiple of this.</p>
+  <p class="tag" id="t-lotStep" hidden>typical value, check with your broker</p>
+  <p class="error" id="e-lotStep" role="alert" hidden></p>
+</div>
+<div class="field" id="w-maxLot">
+  <label for="f-maxLot" id="l-maxLot">Maximum lot (optional)</label>
+  <input id="f-maxLot" data-key="maxLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-maxLot e-maxLot">
+  <p class="hint" id="h-maxLot">Leave empty if there is no limit.</p>
+  <p class="error" id="e-maxLot" role="alert" hidden></p>
+</div>
+  </div>
+  <div class="help-box" id="nonforex-help" hidden>
+    <p class="help-title">Where to find these numbers</p>
+    <p>Nothing is filled in for this type, because the values differ between brokers. Open the symbol information window of your trading platform (often called symbol specification or contract specification) and copy the numbers.</p>
+    <ul>
+      <li>Quote currency: the currency profit and loss is paid in, often called profit currency.</li>
+      <li>Contract size: the number of units in 1.00 lot.</li>
+      <li>Pip or point size: the price move you want to count as one step. Often the tick size or point size shown there.</li>
+      <li>Minimum lot, lot step and maximum lot: listed as minimum volume, volume step and maximum volume.</li>
+    </ul>
+  </div>
+  <details class="more" id="forex-help">
+    <summary>What is this?</summary>
+    <p>A lot is a fixed number of units. The contract size says how many. The pip size is the small price step you count in. The minimum lot and the lot step are the smallest size and the smallest change in size your broker allows. Typical values are filled in for a forex pair, but brokers differ, so check them in your platform.</p>
+  </details>
+  <div class="check-line" id="check-line" hidden aria-live="polite"></div>
+  <div class="confirm" id="confirm-wrap">
+    <label class="check" for="f-checked"><input type="checkbox" id="f-checked" data-key="checked" aria-describedby="h-checked"> <span>I have checked these numbers in my platform</span></label>
+    <p class="hint" id="h-checked">Required before any lot size is shown. Changing a number above unticks it.</p>
+  </div>
+</section>
+
+<section class="card step" id="card-conversion" aria-labelledby="t-conversion" hidden>
+  <h2 id="t-conversion">Currency conversion</h2>
+  <p class="explain" id="conversion-explain">Your account and this instrument use different currencies, so Lotcheck needs one exchange rate.</p>
+  <p class="lookup" id="conversion-instrument" hidden>Your account currency is the first currency of this pair, so Lotcheck converts the loss at your stop-loss price. No extra price is needed.</p>
+  <p class="lookup" id="conversion-instrument-other" hidden>Your account currency is what this instrument is priced from, so Lotcheck converts the loss at your stop-loss price. No extra price is needed.</p>
+  <div id="conversion-inputs">
+  <p class="lookup" id="conversion-lookup"></p>
+  <p class="lookup" id="conversion-pair-warning" hidden>If the instrument you trade is this same pair, enter its base currency in step 2 instead. Otherwise the loss is under-stated.</p>
+<fieldset class="toggle" id="fs-convPair">
+  <legend>Which price are you entering?</legend>
+  <div class="choices">
+    <label class="choice" for="conv-aq"><input type="radio" id="conv-aq" name="convPair" value="account-quote" data-key="convPair"> <span id="conv-aq-text">Pair 1</span></label>
+    <label class="choice" for="conv-qa"><input type="radio" id="conv-qa" name="convPair" value="quote-account" data-key="convPair"> <span id="conv-qa-text">Pair 2</span></label>
+  </div>
+</fieldset>
+  <div class="grid">
+<div class="field" id="w-convPrice">
+  <label for="f-convPrice" id="l-convPrice">Price</label>
+  <input id="f-convPrice" data-key="convPrice" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-convPrice e-convPrice">
+  <p class="hint" id="h-convPrice">The current price of the pair you picked, as your platform shows it.</p>
+  <p class="error" id="e-convPrice" role="alert" hidden></p>
+</div>
+  </div>
+  <p class="rate-line" id="rate-line" hidden></p>
+  </div>
+  <details class="more">
+    <summary>What is this?</summary>
+    <p>If the instrument is paid in a different currency than your account, the loss has to be converted. Look up the current price of the currency pair in your platform. The sentence under the price shows what Lotcheck understood. Check that it points the right way.</p>
+  </details>
+</section>
+
+<section class="card step" id="card-trade" aria-labelledby="t-trade">
+  <h2 id="t-trade">Your trade</h2>
+  <p class="explain">Enter the price you plan to enter at and the price of your stop-loss.</p>
+  <div class="grid">
+<div class="field" id="w-entry">
+  <label for="f-entry" id="l-entry">Entry price</label>
+  <input id="f-entry" data-key="entry" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-entry e-entry">
+  <p class="hint" id="h-entry">The price you plan to open the trade at.</p>
+  <p class="error" id="e-entry" role="alert" hidden></p>
+</div>
+<div class="field" id="w-stop">
+  <label for="f-stop" id="l-stop">Stop-loss price</label>
+  <input id="f-stop" data-key="stop" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-stop e-stop">
+  <p class="hint" id="h-stop">The price where the trade closes at a loss. It must differ from the entry.</p>
+  <p class="error" id="e-stop" role="alert" hidden></p>
+</div>
+<div class="field" id="w-extraDistance">
+  <label for="f-extraDistance" id="l-extraDistance">Extra distance for spread or slippage (optional)</label>
+  <input id="f-extraDistance" data-key="extraDistance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-extraDistance e-extraDistance">
+  <p class="hint" id="h-extraDistance">In the same price units as your entry and stop, for example 0.0002 for EURUSD. It is added to the stop distance.</p>
+  <p class="error" id="e-extraDistance" role="alert" hidden></p>
+</div>
+<div class="field" id="w-commission">
+  <label for="f-commission" id="l-commission">Commission per 1.00 lot, round trip (optional)</label>
+  <input id="f-commission" data-key="commission" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-commission e-commission">
+  <p class="hint" id="h-commission">In your account currency. Leave empty if there is none.</p>
+  <p class="error" id="e-commission" role="alert" hidden></p>
+</div>
+<div class="field" id="w-leverage">
+  <label for="f-leverage" id="l-leverage">Leverage (optional)</label>
+  <div class="prefixed"><span class="prefix" aria-hidden="true">1:</span><input id="f-leverage" data-key="leverage" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-leverage e-leverage"></div>
+  <p class="hint" id="h-leverage">For example 30 for 1:30. Only used to show the margin needed.</p>
+  <p class="error" id="e-leverage" role="alert" hidden></p>
+</div>
+  </div>
+  <details class="more">
+    <summary>What is this?</summary>
+    <p>The stop-loss decides how far the price may move against you. Lotcheck works out the size so that this move costs about your chosen risk. If the stop is below the entry it is a buy, if it is above the entry it is a sell. Spread, slippage and commission make the real loss bigger, so enter them if you know them.</p>
+  </details>
+</section>
+
+<section class="card step" id="card-guard" aria-labelledby="t-guard">
+  <h2 id="t-guard">Account loss limits (optional)</h2>
+  <p class="explain" id="guard-status">Not applied: no limit entered yet.</p>
+  <details id="guard" class="guard">
+    <summary>I trade an account with loss limits (for example a prop-firm challenge)</summary>
+    <p class="note">Rules differ between firms and change. Take every number from your own firm's current rules. Lotcheck ships no firm presets.</p>
+    <div class="help-box" id="firm-questions">
+      <p class="help-title">Answer these from your firm's rules first</p>
+      <ul>
+        <li>Is the daily limit a percent of the starting balance or of the day-start value?</li>
+        <li>Is the day-start value the balance or the equity, and at what time does the day reset?</li>
+        <li>Is the total limit fixed (often called max drawdown) or trailing (trailing drawdown)?</li>
+        <li>Does a trailing floor follow balance or equity, and does it stop rising at some point?</li>
+      </ul>
+    </div>
+    <div class="grid">
+<div class="field" id="w-equity">
+  <label for="f-equity" id="l-equity">Current equity</label>
+  <input id="f-equity" data-key="equity" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-equity e-equity">
+  <p class="hint" id="h-equity">Balance plus the floating profit or loss of your open trades, right now.</p>
+  <p class="error" id="e-equity" role="alert" hidden></p>
+</div>
+    </div>
+    <h3>Daily loss limit</h3>
+    <div class="grid">
+<div class="field" id="w-dailyPercent">
+  <label for="f-dailyPercent" id="l-dailyPercent">Daily limit (percent)</label>
+  <input id="f-dailyPercent" data-key="dailyPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyPercent e-dailyPercent">
+  <p class="hint" id="h-dailyPercent">Often called max daily loss. Check whether your firm counts balance or equity.</p>
+  <p class="error" id="e-dailyPercent" role="alert" hidden></p>
+</div>
+<div class="field" id="w-dailyOf">
+  <label for="f-dailyOf" id="l-dailyOf">Daily limit: percent of this amount</label>
+  <input id="f-dailyOf" data-key="dailyOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyOf e-dailyOf">
+  <p class="hint" id="h-dailyOf">The amount your firm takes the percent of, often the starting balance.</p>
+  <p class="error" id="e-dailyOf" role="alert" hidden></p>
+</div>
+<div class="field" id="w-dailyStart">
+  <label for="f-dailyStart" id="l-dailyStart">Value at the start of the trading day</label>
+  <input id="f-dailyStart" data-key="dailyStart" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyStart e-dailyStart">
+  <p class="hint" id="h-dailyStart">Check when your firm's day resets and what value it uses.</p>
+  <p class="error" id="e-dailyStart" role="alert" hidden></p>
+</div>
+    </div>
+    <h3>Total loss limit</h3>
+<fieldset class="toggle" id="fs-totalType" aria-describedby="h-totalType">
+  <legend>Type of total limit</legend>
+  <p class="hint" id="h-totalType">Firms often call these max drawdown (fixed) and trailing drawdown. The floor is the account value you must stay above.</p>
+  <div class="choices">
+    <label class="choice" for="total-static"><input type="radio" id="total-static" name="totalType" value="static" data-key="totalType"> <span id="total-static-text">Fixed floor</span></label>
+    <label class="choice" for="total-trailing"><input type="radio" id="total-trailing" name="totalType" value="trailing" data-key="totalType"> <span id="total-trailing-text">Trailing floor</span></label>
+  </div>
+</fieldset>
+    <p class="explain" id="trailing-note" hidden>This room assumes the floor does not move while the trade is open. If your firm's floor follows equity, profit made before the stop raises the floor, and the stop can then break the limit.</p>
+    <div class="grid">
+<div class="field" id="w-totalPercent">
+  <label for="f-totalPercent" id="l-totalPercent">Total limit (percent)</label>
+  <input id="f-totalPercent" data-key="totalPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalPercent e-totalPercent">
+  <p class="hint" id="h-totalPercent">The most your firm lets the account fall in total.</p>
+  <p class="error" id="e-totalPercent" role="alert" hidden></p>
+</div>
+<div class="field" id="w-totalInitial">
+  <label for="f-totalInitial" id="l-totalInitial">Starting balance of the account</label>
+  <input id="f-totalInitial" data-key="totalInitial" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalInitial e-totalInitial">
+  <p class="hint" id="h-totalInitial">The starting balance the fixed floor is measured from.</p>
+  <p class="error" id="e-totalInitial" role="alert" hidden></p>
+</div>
+<div class="field" id="w-totalOf" hidden>
+  <label for="f-totalOf" id="l-totalOf">Total limit: percent of this amount</label>
+  <input id="f-totalOf" data-key="totalOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalOf e-totalOf">
+  <p class="hint" id="h-totalOf">The amount a trailing limit takes the percent of.</p>
+  <p class="error" id="e-totalOf" role="alert" hidden></p>
+</div>
+<div class="field" id="w-totalHigh" hidden>
+  <label for="f-totalHigh" id="l-totalHigh">Highest value reached</label>
+  <input id="f-totalHigh" data-key="totalHigh" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalHigh e-totalHigh">
+  <p class="hint" id="h-totalHigh">The high-water mark your firm uses. Check if it counts balance or equity.</p>
+  <p class="error" id="e-totalHigh" role="alert" hidden></p>
+</div>
+<div class="field" id="w-totalFloorCap" hidden>
+  <label for="f-totalFloorCap" id="l-totalFloorCap">Floor stops rising at (optional)</label>
+  <input id="f-totalFloorCap" data-key="totalFloorCap" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalFloorCap e-totalFloorCap">
+  <p class="hint" id="h-totalFloorCap">If your firm stops the floor from rising above a value, enter it here.</p>
+  <p class="error" id="e-totalFloorCap" role="alert" hidden></p>
+</div>
+    </div>
+    <h3>Open trades and buffer</h3>
+    <div class="grid">
+<div class="field" id="w-openRisk">
+  <label for="f-openRisk" id="l-openRisk">Open risk on trades you already have</label>
+  <input id="f-openRisk" data-key="openRisk" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-openRisk e-openRisk">
+  <p class="hint" id="h-openRisk">The further loss if every open trade hits its stop from the current price. Leave empty if none.</p>
+  <p class="error" id="e-openRisk" role="alert" hidden></p>
+</div>
+<div class="field" id="w-buffer">
+  <label for="f-buffer" id="l-buffer">Room to keep unused</label>
+  <input id="f-buffer" data-key="buffer" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-buffer e-buffer">
+  <p class="hint" id="h-buffer">Room you want to keep unused. Leave empty if none.</p>
+  <p class="error" id="e-buffer" role="alert" hidden></p>
+</div>
+    </div>
+    <details class="more">
+      <summary>What is this?</summary>
+      <p>Some accounts have rules that end the account if you lose too much in a day or in total. Lotcheck works out how much room is left and sizes the trade so that the planned loss at your stop stays inside that room. Gaps and slippage can still make the loss larger. It is only as right as the numbers you enter.</p>
+    </details>
+  </details>
+</section>
+
+<section class="result" id="result" aria-live="polite" aria-atomic="false" aria-labelledby="result-title">
+  <h2 id="result-title" class="sr-only">Result</h2>
+  <div id="result-body"></div>
+  <p class="explain" id="costs-line">Swaps, financing and fees charged as a percent of the trade are never included.</p>
+  <p class="disclaimer">A stop-loss does not guarantee this loss. Gaps and slippage can make the real loss larger. Lotcheck does not give trading advice.</p>
+</section>
+
+<section class="card memory" id="card-memory" aria-labelledby="t-memory">
+  <h2 id="t-memory" class="plain-title">Saved inputs</h2>
+  <label class="check" for="f-remember"><input type="checkbox" id="f-remember" aria-describedby="h-remember"> <span>Remember my inputs in this browser</span></label>
+  <p class="hint" id="h-remember">Saves your account currency, risk setting, instrument type, symbol, currencies, contract size, pip size, lot sizes and leverage in this browser only. Balance, prices, commission and loss-limit values are never saved, because they change.</p>
+  <p class="hint" id="remember-unavailable" hidden>Saving is not available in this browser, so your inputs are only kept while this page is open.</p>
+  <button type="button" id="b-forget">Forget saved inputs</button>
+  <p class="hint" id="forget-status" role="status"></p>
+</section>
+
+</main>
+<footer class="page-footer">
+  <p>Lotcheck is free and open source. It is a calculator, not advice. Check every number against your own platform. Guides for finding these numbers and for loss limits are in the docs folder of the Lotcheck project.</p>
+</footer>
+<script type="module">{{SCRIPT}}</script>
+</body>
+</html>
