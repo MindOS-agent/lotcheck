@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EXuQFC56c/9bY0PH60HE8ql7/y31Ru/1HQ7jonjrhzA='; style-src 'sha256-eeeOb9G/KJSOC9LTGkj9wRoM01UF242EqzAu7NFgRCE='; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-YONBHITTp5XGne3Y1IdWysc1NDBHB7TaduniuwzPAI4='; style-src 'sha256-eeeOb9G/KJSOC9LTGkj9wRoM01UF242EqzAu7NFgRCE='; img-src data:; base-uri 'none'; form-action 'none'">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
@@ -652,7 +652,7 @@ button:disabled {
   <div class="check-line" id="check-line" hidden aria-live="polite"></div>
   <div class="confirm" id="confirm-wrap">
     <label class="check" for="f-checked"><input type="checkbox" id="f-checked" data-key="checked" aria-describedby="h-checked"> <span>I have checked these numbers in my platform</span></label>
-    <p class="hint" id="h-checked">Required before any lot size is shown. Changing a number above unticks it.</p>
+    <p class="hint" id="h-checked">Required before any lot size is shown. Changing the account currency or a field in this card unticks it.</p>
   </div>
 </section>
 
@@ -2068,7 +2068,8 @@ function editField(state, key, value) {
   if (CURRENCY_KEYS.includes(key)) text = text.toUpperCase();
   next[key] = text;
   delete next.tags[key];
-  if (INSTRUMENT_KEYS.includes(key)) next.checked = false;
+  // The account currency changes what the check line shows, so it unticks too.
+  if (INSTRUMENT_KEYS.includes(key) || (key === "accountCurrency" && text !== state.accountCurrency)) next.checked = false;
   const symbolChanged = key === "symbol" && text !== state.symbol;
   const filled = key === "symbol" ? replaceForNewPair(state, applyForexPrefill(next)) : next;
   return clearStale(state, filled, symbolChanged);
@@ -2428,8 +2429,8 @@ const UNFINISHED = {
   total: "the total limit",
 };
 
-// The status line of the loss-limits card (one of the exact texts of the
-// spec), from the state of the two rules: "none", "unfinished" or "complete".
+// The status line of the loss-limits card (one of a fixed set of texts),
+// from the state of the two rules: "none", "unfinished" or "complete".
 function guardStatusText(daily, total) {
   if (daily === "none" && total === "none") return "Not applied: no limit entered yet.";
   if (daily !== "unfinished" && total !== "unfinished") {

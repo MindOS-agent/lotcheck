@@ -20,7 +20,7 @@ Lotcheck is only as right as the numbers you give it. Contract size and point va
 
 So Lotcheck shows a **check line** under the instrument fields. It says what 1.00 lot is worth when the price moves by one pip or point. Compare that figure with the same figure in your trading platform. If they differ, one of your numbers is wrong.
 
-For every instrument type, forex included, you must tick "I have checked these numbers in my platform" before a lot size is shown. Changing any instrument field unticks it. Values the page pre-fills for a recognised currency pair are only typical values, so check them too.
+For every instrument type, forex included, you must tick "I have checked these numbers in my platform" before a lot size is shown. Changing the account currency or any instrument field unticks it. Values the page pre-fills for a recognised currency pair are only typical values, so check them too.
 
 See [docs/finding-your-numbers.md](docs/finding-your-numbers.md).
 
@@ -30,7 +30,7 @@ See [docs/finding-your-numbers.md](docs/finding-your-numbers.md).
 - Rounds the size **down** to the lot step. It never rounds **up** to the minimum lot. If no allowed size fits your risk, it shows no size and says so.
 - Requires the minimum lot to be a whole number of lot steps.
 - Converts the instrument's profit and loss currency into your account currency. For a cross pair you type the market price of a currency pair, and the page shows the rate back to you as a sentence so you can check the direction. That price can move before your stop is hit, and the real loss moves with it.
-- For pairs that start with your account currency (a USD account trading USDJPY, a EUR account trading EURUSD), converts the loss at your stop-loss price, so no conversion price is needed and the loss is not understated. This applies to every instrument type (for example a BTC account trading BTCUSD). For forex pairs the base currency is required, because without it Lotcheck cannot detect this case.
+- For pairs that start with your account currency (a USD account trading USDJPY, a EUR account trading EURUSD), converts the loss at your stop-loss price, so no conversion price is needed and the loss is not understated. This applies to every instrument type (for example a BTC account trading BTCUSD). For forex pairs the page asks for the base currency, because a symbol with extra letters in front (for example "mUSDJPY") cannot be recognised from the symbol alone.
 - Optionally includes commission and extra distance for spread or slippage, and tells you when either is left at zero. It never includes swaps, financing or fees charged as a percent of the trade.
 - Optionally shows an estimated margin, if you enter leverage. It uses the one leverage figure you enter. Brokers may use a different margin rate for each instrument.
 - Optionally caps the risk to the loss room left under your account's daily and total loss limits. It warns when a size would end exactly on a limit, when your equity is above the highest value you entered, and that a trailing floor is treated as a snapshot.

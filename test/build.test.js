@@ -111,7 +111,7 @@ test("dist/lotcheck.html and dist/SHA256SUMS match a fresh build", () => {
   assert.equal(sums, built.sha256 + "  lotcheck.html\n");
 });
 
-test("the page has the text the spec asks for", () => {
+test("the page has the required texts", () => {
   for (const text of [
     "Work out your position size before you trade. Runs on your device. Nothing is sent anywhere.",
     "Remember my inputs in this browser",
@@ -435,6 +435,10 @@ test("changing any instrument field unticks the confirmation", () => {
   }
   assert.equal(app.setInstrumentType({ ...app.defaultState(), checked: true }, "crypto").checked, false);
   assert.equal(app.editField({ ...app.defaultState(), checked: true }, "entry", "1").checked, true);
+  // The account currency changes the value in the check line, so it unticks as well.
+  assert.equal(app.editField({ ...app.defaultState(), accountCurrency: "EUR", checked: true }, "accountCurrency", "GBP").checked, false);
+  assert.equal(app.editField({ ...app.defaultState(), accountCurrency: "EUR", checked: true }, "accountCurrency", "eur").checked, true);
+  assert.equal(app.editField({ ...app.defaultState(), checked: true }, "balance", "5000").checked, true);
 });
 
 test("currency fields are uppercased as the user types", () => {
@@ -1449,7 +1453,7 @@ test("the comment above serializeState describes the saved scope", () => {
 
 test("the built page asks for the confirmation tick for every instrument type", () => {
   assert.ok(html.includes("I have checked these numbers in my platform"));
-  assert.ok(html.includes("Required before any lot size is shown. Changing a number above unticks it."));
+  assert.ok(html.includes("Required before any lot size is shown. Changing the account currency or a field in this card unticks it."));
   assert.ok(!/id="confirm-wrap"[^>]*hidden/.test(html), "the confirmation is never hidden");
   assert.ok(!inlineScript().includes("confirm-wrap\").hidden"), "the script never hides the confirmation");
 });

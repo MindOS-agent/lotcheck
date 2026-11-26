@@ -393,7 +393,8 @@ export function editField(state, key, value) {
   if (CURRENCY_KEYS.includes(key)) text = text.toUpperCase();
   next[key] = text;
   delete next.tags[key];
-  if (INSTRUMENT_KEYS.includes(key)) next.checked = false;
+  // The account currency changes what the check line shows, so it unticks too.
+  if (INSTRUMENT_KEYS.includes(key) || (key === "accountCurrency" && text !== state.accountCurrency)) next.checked = false;
   const symbolChanged = key === "symbol" && text !== state.symbol;
   const filled = key === "symbol" ? replaceForNewPair(state, applyForexPrefill(next)) : next;
   return clearStale(state, filled, symbolChanged);
@@ -753,8 +754,8 @@ const UNFINISHED = {
   total: "the total limit",
 };
 
-// The status line of the loss-limits card (one of the exact texts of the
-// spec), from the state of the two rules: "none", "unfinished" or "complete".
+// The status line of the loss-limits card (one of a fixed set of texts),
+// from the state of the two rules: "none", "unfinished" or "complete".
 export function guardStatusText(daily, total) {
   if (daily === "none" && total === "none") return "Not applied: no limit entered yet.";
   if (daily !== "unfinished" && total !== "unfinished") {

@@ -60,7 +60,7 @@ How to check it:
 
 A difference of a few cents can come from the conversion rate. A difference of a factor of 10 or 100 is a wrong contract size or pip size.
 
-Tick the box "I have checked these numbers in my platform" only after you have done this. It is required for every instrument type, forex included. No lot size is shown until it is ticked. The hint under it says: "Required before any lot size is shown. Changing a number above unticks it." If a symbol caution is showing, the result card repeats it above the lot size.
+Tick the box "I have checked these numbers in my platform" only after you have done this. It is required for every instrument type, forex included. No lot size is shown until it is ticked. The hint under it says: "Required before any lot size is shown. Changing the account currency or a field in this card unticks it." If a symbol caution is showing, the result card repeats it above the lot size.
 
 ## Extra distance and commission
 
