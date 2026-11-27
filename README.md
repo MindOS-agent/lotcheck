@@ -12,7 +12,7 @@ You do not need an account or any software. Three steps:
 2. Press the download button (the arrow, "Download raw file"). Your browser saves the file.
 3. Double-click the saved file. It opens in your browser. The page takes you through four steps, one screen at a time: your account, what you trade, your trade, and the result. Press Next to move on and Back to change something.
 
-It works with no internet connection. Nothing is installed. Numbered releases may be offered later.
+It works with no internet connection. Nothing is installed. Each numbered release on the repository's Releases page offers the same file, with its checksum.
 
 ## Check your numbers first
 
