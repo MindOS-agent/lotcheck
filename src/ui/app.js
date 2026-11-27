@@ -78,7 +78,7 @@ const MAIN_NUMBER_KEYS = [
   "leverage",
 ];
 
-// Fields that hold a decimal number in the loss-limits card.
+// Fields that hold a decimal number on the loss-limits screen.
 const GUARD_NUMBER_KEYS = [
   "equity",
   "dailyPercent",
@@ -744,9 +744,10 @@ function isAboveZero(text) {
 // has text does too).
 function ruleState(s, needed, optional) {
   const started = needed.concat(optional).some((key) => nonEmpty(s[key]));
-  const missing = needed.filter((key) => !nonEmpty(s[key]) || !isAboveZero(s[key])).map((key) => FIELD_LABELS[key]);
-  for (const key of optional) if (nonEmpty(s[key]) && !isAboveZero(s[key])) missing.push(FIELD_LABELS[key]);
-  return { started, complete: started && missing.length === 0, missing };
+  const missingKeys = needed.filter((key) => !nonEmpty(s[key]) || !isAboveZero(s[key]));
+  for (const key of optional) if (nonEmpty(s[key]) && !isAboveZero(s[key])) missingKeys.push(key);
+  const missing = missingKeys.map((key) => FIELD_LABELS[key]);
+  return { started, complete: started && missing.length === 0, missing, missingKeys };
 }
 
 const UNFINISHED = {
@@ -770,12 +771,19 @@ export function guardStatusText(daily, total) {
   return "Not applied yet: " + (daily === "unfinished" ? UNFINISHED.daily : UNFINISHED.total) + " is not finished.";
 }
 
-// Which loss-limit rules are started, which are complete, and what the card
-// and the result say about them. The fields count whether the card is open or
-// collapsed.
+export const GUARD_NO_TEXT = "Not applied: you answered No.";
+
+// Which loss-limit rules are started, which are complete, and what the
+// screen and the result say about them. Loss limits count only when the
+// answer to "Does your account have loss limits?" is Yes. With No, whatever
+// is typed in the limit fields is kept but ignored completely.
 export function guardInfo(state) {
   const s = cleanState(state);
   const info = { open: s.guardOpen, active: false, input: null, note: null, block: null };
+  if (s.guardOpen !== true) {
+    info.note = GUARD_NO_TEXT;
+    return info;
+  }
   const total = totalKeys(s);
   const daily = ruleState(s, DAILY_KEYS, []);
   const totalRule = ruleState(s, total.needed, total.optional);
@@ -787,6 +795,7 @@ export function guardInfo(state) {
     const list = rule.missing.slice();
     if (equityMissing) list.push(FIELD_LABELS.equity);
     if (list.length > 0) {
+      if (info.focusKey === undefined) info.focusKey = equityMissing ? "equity" : rule.missingKeys[0];
       sentences.push("Finish or clear the " + name + " limit fields first. Still needed: " + list.join(", ") + ".");
     }
   }
@@ -880,8 +889,9 @@ export function pipValueText(q, currency) {
   return moneyDisplay(q, currency, "down");
 }
 
-// The check line: what 1 pip or point is worth for 1.00 lot.
-export function checkLineText(state) {
+// The check line in three parts: what 1 pip or point is worth for 1.00 lot.
+// The value is shown large on the page. Null while it cannot be worked out.
+export function checkLineParts(state) {
   const s = cleanState(state);
   if (!isCurrency(s.accountCurrency) || !isCurrency(s.quoteCurrency)) return null;
   if (baseConflict(s)) return null;
@@ -911,15 +921,18 @@ export function checkLineText(state) {
     rate = Q.ONE.div(entry);
   }
   const shown = pipValueText(pip.mul(contract).mul(rate), s.accountCurrency);
-  return (
-    "With these numbers, 1.00 lot moving 1 pip/point (" +
-    s.pipSize +
-    ") is worth " +
-    shown +
-    " " +
-    s.accountCurrency +
-    ". Compare this with your platform before you trust the result."
-  );
+  return {
+    lead: "With these numbers, 1.00 lot moving 1 pip/point (" + s.pipSize + ") is worth",
+    value: shown + " " + s.accountCurrency,
+    tail: "Compare this with your platform before you trust the result.",
+  };
+}
+
+// The check line as one sentence.
+export function checkLineText(state) {
+  const parts = checkLineParts(state);
+  if (parts === null) return null;
+  return parts.lead + " " + parts.value + ". " + parts.tail;
 }
 
 // ---------------------------------------------------------------------------
@@ -1012,6 +1025,7 @@ export function buildResultModel(state, size, room) {
     rows.push(["Loss budget used", moneyText(size.riskBudget, currency, "down")]);
   }
   rows.push(["Limited by", LIMITED_BY_TEXTS[size.limitedBy] || LIMITED_BY_TEXTS.risk]);
+  if (s.guardOpen !== true) rows.push(["Loss limits", "Not applied"]);
   rows.push(["Stop distance", distance]);
   rows.push([
     "Value of one " + unitOne + " per 1.00 lot",
@@ -1051,6 +1065,7 @@ export function evaluate(state) {
   const view = {
     errors,
     checkLine: checkLineText(s),
+    checkParts: checkLineParts(s),
     conversion: conv,
     guard,
     result: null,
@@ -1063,8 +1078,9 @@ export function evaluate(state) {
   if (baseConflict(s)) errors.baseCurrency = messageForError("baseCurrency", "conflict", s);
   const numberKeys = MAIN_NUMBER_KEYS.slice();
   if (conv.needed) numberKeys.push("convPrice");
-  {
-    // The loss-limit fields count whether the card is open or collapsed.
+  if (s.guardOpen === true) {
+    // The loss-limit fields are checked only when the answer is Yes. The
+    // fields of the other kind of total limit are not checked.
     const hiddenKeys =
       s.totalType === "trailing" ? ["totalInitial"] : ["totalOf", "totalHigh", "totalFloorCap"];
     for (const key of GUARD_NUMBER_KEYS) if (!hiddenKeys.includes(key)) numberKeys.push(key);
@@ -1202,6 +1218,280 @@ export function riskLabel(state) {
 }
 
 // ---------------------------------------------------------------------------
+// The screens: which exist, what blocks leaving one, what the sentences say.
+// Everything here is pure; the page only wires it to the document.
+// ---------------------------------------------------------------------------
+
+export const SCREEN_TITLES = {
+  account: "Your account",
+  instrument: "What you trade",
+  conversion: "Currency conversion",
+  trade: "Your trade",
+  limits: "Loss limits",
+  result: "Result",
+};
+
+// The four numbered steps, each opening on its first screen.
+export const STEPS = [
+  { screen: "account", label: "Account" },
+  { screen: "instrument", label: "Instrument" },
+  { screen: "trade", label: "Trade" },
+  { screen: "result", label: "Result" },
+];
+
+// The step each screen belongs to (1 to 4).
+const SCREEN_STEP = { account: 1, instrument: 2, conversion: 2, trade: 3, limits: 3, result: 4 };
+
+export const TICK_MESSAGE = "Tick the box once you have compared the numbers.";
+export const CONV_CHOICE_MESSAGE = "Choose which price you are entering.";
+export const GUARD_EMPTY_MESSAGE = "Enter at least one complete limit, or go back and answer No.";
+
+// The keys on each screen, in the order they appear on the page. "checked" is
+// the tick, "convPair" the pair choice and "guard" the message about the
+// limits as a whole.
+const SCREEN_KEYS = {
+  account: ["accountCurrency", "balance", "riskValue"],
+  instrument: ["symbol", "baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep", "maxLot", "checked"],
+  conversion: ["convPair", "convPrice"],
+  trade: ["entry", "stop", "extraDistance", "commission", "leverage"],
+  limits: [
+    "guard",
+    "equity",
+    "dailyPercent",
+    "dailyOf",
+    "dailyStart",
+    "totalPercent",
+    "totalInitial",
+    "totalOf",
+    "totalHigh",
+    "totalFloorCap",
+    "openRisk",
+    "buffer",
+  ],
+};
+
+// The instrument numbers behind "Change numbers".
+const NUMBER_FIELD_KEYS = ["baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep", "maxLot"];
+
+// The screens that exist for this state, in order.
+export function screensFor(state) {
+  const screens = ["account", "instrument"];
+  if (conversionLabels(state) !== null) screens.push("conversion");
+  screens.push("trade");
+  if (state.guardOpen === true) screens.push("limits");
+  screens.push("result");
+  return screens;
+}
+
+// The fields on a screen that must not be empty.
+function requiredKeys(s, id) {
+  if (id === "account") return ["accountCurrency", "balance", "riskValue"];
+  if (id === "instrument") {
+    const list = s.instrumentType === "forex" ? ["baseCurrency"] : [];
+    return list.concat(["quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep"]);
+  }
+  if (id === "conversion") return ["convPair", "convPrice"];
+  if (id === "trade") return ["entry", "stop"];
+  return [];
+}
+
+export function emptyMessage(key) {
+  if (key === "convPair") return CONV_CHOICE_MESSAGE;
+  return "Enter the " + FIELD_LABELS[key].toLowerCase() + ".";
+}
+
+export const SYMBOL_MESSAGE = "Enter a symbol, for example EURUSD.";
+
+// True for a forex pair with no symbol and none of the seven instrument
+// fields filled in: the first view of the instrument screen.
+export function instrumentIsBlank(state) {
+  const s = cleanState(state);
+  return s.instrumentType === "forex" && normalizeSymbol(s.symbol) === "" && NUMBER_FIELD_KEYS.every((key) => s[key] === "");
+}
+
+// What stops the user from leaving a screen: a list of { key, message, live }
+// in page order. "live" problems come from view.errors and show while typing;
+// the others (an empty field, the tick, unfinished limits) show once Next was
+// pressed on that screen. The result screen has no problems of its own.
+export function screenProblems(state, view, id) {
+  const keys = SCREEN_KEYS[id];
+  if (!keys) return [];
+  const s = cleanState(state);
+  const errors = (view && view.errors) || {};
+  if (id === "instrument" && instrumentIsBlank(s)) return [{ key: "symbol", message: SYMBOL_MESSAGE, live: false }];
+  const required = requiredKeys(s, id);
+  const out = [];
+  for (const key of keys) {
+    if (key === "checked") {
+      if (errors.checked) out.push({ key, message: errors.checked, live: true });
+      else if (!s.checked) out.push({ key, message: TICK_MESSAGE, live: false });
+    } else if (key === "guard") {
+      if (s.guardOpen !== true) continue;
+      const info = guardInfo(s);
+      if (info.block) out.push({ key, message: info.block, live: false, focus: info.focusKey });
+      else if (!info.active) out.push({ key, message: GUARD_EMPTY_MESSAGE, live: false });
+    } else if (errors[key]) {
+      out.push({ key, message: errors[key], live: true });
+    } else if (required.includes(key) && s[key] === "") {
+      out.push({ key, message: emptyMessage(key), live: false });
+    }
+  }
+  return out;
+}
+
+// The first screen before `before` (or before the result when `before` is
+// null) that has a problem, or null.
+export function firstScreenWithProblem(state, view, before) {
+  for (const id of screensFor(state)) {
+    if (id === before || id === "result") return null;
+    if (screenProblems(state, view, id).length > 0) return id;
+  }
+  return null;
+}
+
+export function nextScreen(state, current) {
+  const screens = screensFor(state);
+  const at = screens.indexOf(current);
+  return at >= 0 && at + 1 < screens.length ? screens[at + 1] : null;
+}
+
+export function prevScreen(state, current) {
+  const screens = screensFor(state);
+  const at = screens.indexOf(current);
+  return at > 0 ? screens[at - 1] : null;
+}
+
+// The Back and Next buttons for a screen.
+export function footerFor(state, current) {
+  const next = nextScreen(state, current);
+  return {
+    showBack: current !== "account",
+    nextLabel: current === "result" ? "New trade" : next === "result" ? "Show result" : "Next",
+  };
+}
+
+// The four steps of the progress line: its state ("done", "now" or "todo"),
+// whether it can be clicked, and the screen it opens. A step can be opened
+// when it is before the current one, or when no screen before it has a problem.
+export function progressSteps(state, view, current) {
+  const now = SCREEN_STEP[current] || 1;
+  return STEPS.map((step, index) => {
+    const number = index + 1;
+    const status = number < now ? "done" : number === now ? "now" : "todo";
+    // The current step opens its main screen when another of its screens
+    // (conversion, limits) is showing.
+    let clickable = status === "done" || (status === "now" && current !== step.screen);
+    if (status === "todo") clickable = firstScreenWithProblem(state, view, step.screen) === null;
+    return { label: step.label, screen: step.screen, status, clickable };
+  });
+}
+
+// What pressing Next (or a step in the progress line) does: the screen to
+// show and the problems to show on it. A move towards the result is held
+// until no earlier screen has a problem.
+export function advance(state, view, current, target) {
+  if (target === undefined) target = nextScreen(state, current);
+  if (target === null) return { target: current, problems: screenProblems(state, view, current) };
+  const screens = screensFor(state);
+  const from = screens.indexOf(current);
+  const to = screens.indexOf(target);
+  if (to > from) {
+    // A forward move stops at the first screen from here up to the target
+    // that has a problem.
+    for (let i = from; i < to; i++) {
+      const problems = screenProblems(state, view, screens[i]);
+      if (problems.length > 0) return { target: screens[i], problems };
+    }
+  }
+  if (target === "result") {
+    const blocked = firstScreenWithProblem(state, view, null);
+    if (blocked !== null) return { target: blocked, problems: screenProblems(state, view, blocked) };
+  }
+  return { target, problems: [] };
+}
+
+// The screen to show after the state changed: the result gives way to an
+// earlier screen that has a problem, and a screen that no longer exists gives
+// way to a neighbour.
+export function settleScreen(state, view, current) {
+  if (current === "result") {
+    const blocked = firstScreenWithProblem(state, view, null);
+    return blocked === null ? "result" : blocked;
+  }
+  if (screensFor(state).includes(current)) return current;
+  if (current === "limits") return "trade";
+  if (current === "conversion") return "instrument";
+  return "account";
+}
+
+// "New trade": clears the entry, the stop and the conversion price and keeps
+// everything else, the tick included. Returns the new state and the screen to
+// open.
+export function startNewTrade(state) {
+  let next = state;
+  for (const key of ["entry", "stop", "convPrice"]) next = editField(next, key, "");
+  return { state: next, screen: screensFor(next).includes("conversion") ? "conversion" : "trade" };
+}
+
+// The id of the control to focus for a problem key.
+export function focusIdFor(key) {
+  if (key === "convPair") return "conv-aq";
+  if (key === "guard") return "f-equity";
+  return "f-" + key;
+}
+
+// ---------------------------------------------------------------------------
+// The instrument numbers: sentences and whether they are shown
+// ---------------------------------------------------------------------------
+
+// The line above the numbers.
+export function numbersIntro(state) {
+  const s = cleanState(state);
+  const symbol = s.symbol.toUpperCase();
+  const typical = PREFILL_KEYS.every((key) => s.tags[key] === true);
+  if (typical) return "Typical values for " + symbol + ". Brokers differ.";
+  return symbol === "" ? "Your numbers." : "Your numbers for " + symbol + ".";
+}
+
+// The two plain sentences, as lists of pieces. A piece with strong set is
+// shown emphasised. The values are the typed text, not reformatted.
+export function plainNumberLines(state) {
+  const s = cleanState(state);
+  const show = (text) => (text === "" ? "?" : text);
+  const first = [
+    { text: "1.00 lot is " },
+    { text: show(s.contractSize) + " " + (s.baseCurrency === "" ? "units" : s.baseCurrency), strong: true },
+  ];
+  const second = [
+    { text: "Sizes start at " },
+    { text: show(s.minLot), strong: true },
+    { text: " lot, in steps of " },
+    { text: show(s.lotStep), strong: true },
+  ];
+  if (s.maxLot !== "") {
+    second.push({ text: ", up to " });
+    second.push({ text: s.maxLot, strong: true });
+  }
+  return [first, second];
+}
+
+// Whether the number fields are shown. They are forced open (and the toggle
+// is hidden) when a number is missing or wrong or the base currency
+// contradicts the symbol. Otherwise they are folded by default when every
+// pre-filled number is still a typical value, and `choice` (true, false or
+// null for none) is the user's last toggle.
+export function numbersView(state, view, choice) {
+  const s = cleanState(state);
+  const errors = (view && view.errors) || {};
+  const incomplete = requiredKeys(s, "instrument").some((key) => s[key] === "");
+  const wrong = NUMBER_FIELD_KEYS.some((key) => errors[key]) || baseConflict(s);
+  const forced = incomplete || wrong;
+  const typical = PREFILL_KEYS.every((key) => s.tags[key] === true);
+  const open = forced ? true : typeof choice === "boolean" ? choice : !typical;
+  return { open, forced, canToggle: !forced, hidden: instrumentIsBlank(s) };
+}
+
+// ---------------------------------------------------------------------------
 // The page. Everything below only runs when a document exists.
 // ---------------------------------------------------------------------------
 
@@ -1232,15 +1522,21 @@ function makeTable(rows) {
 }
 
 function renderResultInto(model) {
-  const card = byId("result");
+  const region = byId("result-region");
   const body = byId("result-body");
   body.replaceChildren();
+  if (model === null) return;
   const stop = model.kind === "below-minimum" || model.kind === "no-budget" || model.kind === "breached";
-  card.className = "result" + (stop ? " is-stop" : "") + (model.kind === "ok" ? " is-ok" : "");
+  region.className = "result" + (stop ? " is-stop" : "") + (model.kind === "ok" ? " is-ok" : "");
 
   if (model.kind === "ok") {
     if (model.caution) body.appendChild(makeNode("p", "symbol-caution", model.caution));
-    body.appendChild(makeNode("p", "lots", model.headline));
+    const headline = makeNode("p", "lots");
+    const at = model.headline.lastIndexOf(" ");
+    headline.appendChild(makeNode("span", "lots-number", model.headline.slice(0, at)));
+    headline.appendChild(document.createTextNode(" "));
+    headline.appendChild(makeNode("span", "lots-unit", model.headline.slice(at + 1)));
+    body.appendChild(headline);
     body.appendChild(makeNode("p", "loss-line", model.lossLine));
     body.appendChild(makeTable(model.rows));
     if (model.conversionNote) body.appendChild(makeNode("p", "explain", model.conversionNote));
@@ -1249,15 +1545,15 @@ function renderResultInto(model) {
   } else {
     body.appendChild(makeNode("p", "waiting", model.message));
   }
-  if (model.guard) {
-    body.appendChild(makeNode("p", "block-title", "Room under your loss limits"));
-    body.appendChild(makeTable(model.guard.rows));
-    if (model.guard.trailingNote) body.appendChild(makeNode("p", "explain", model.guard.trailingNote));
-  }
   if (model.notes.length > 0) {
     const list = makeNode("ul", "cautions");
     for (const text of model.notes) list.appendChild(makeNode("li", "", text));
     body.appendChild(list);
+  }
+  if (model.guard) {
+    body.appendChild(makeNode("p", "block-title", "Room under your loss limits"));
+    body.appendChild(makeTable(model.guard.rows));
+    if (model.guard.trailingNote) body.appendChild(makeNode("p", "explain", model.guard.trailingNote));
   }
 }
 
@@ -1271,7 +1567,7 @@ function syncControls(state) {
   for (const node of nodes) {
     const key = node.getAttribute("data-key");
     if (node.type === "radio") {
-      node.checked = state[key] === node.value;
+      node.checked = String(state[key]) === node.value;
     } else if (node.type === "checkbox") {
       node.checked = state[key] === true;
     } else if (node.value !== state[key]) {
@@ -1288,14 +1584,21 @@ function syncControls(state) {
   }
 }
 
-function renderPage(state, view) {
-  syncControls(state);
+// The messages to show under fields: format and range errors always, and the
+// "empty" kind of problem on every screen where Next was pressed.
+function visibleMessages(state, view, ui) {
+  const messages = {};
+  for (const id of screensFor(state)) {
+    if (!ui.attempted[id]) continue;
+    for (const problem of screenProblems(state, view, id)) messages[problem.key] = problem.message;
+  }
+  return Object.assign(messages, view.errors);
+}
 
-  // Errors next to their fields.
-  const wraps = document.querySelectorAll(".error");
-  for (const node of wraps) {
+function renderErrors(messages) {
+  for (const node of document.querySelectorAll(".error")) {
     const key = node.id.slice(2);
-    const message = view.errors[key];
+    const message = messages[key];
     const input = byId("f-" + key);
     // Only rewrite the text when it changed, so a screen reader does not
     // announce the same error again on every keystroke.
@@ -1309,12 +1612,61 @@ function renderPage(state, view) {
       if (input) input.removeAttribute("aria-invalid");
     }
   }
+}
 
-  // A mistake in a loss-limit field must be visible, so a collapsed card opens.
-  const guardBox = byId("guard");
-  if (!guardBox.open && GUARD_NUMBER_KEYS.some((key) => view.errors[key])) guardBox.open = true;
+function renderNumbers(state, view, ui) {
+  byId("numbers-intro").textContent = numbersIntro(state);
+  const list = byId("numbers-plain");
+  list.replaceChildren();
+  for (const line of plainNumberLines(state)) {
+    const item = document.createElement("li");
+    for (const piece of line) item.appendChild(piece.strong ? makeNode("b", "", piece.text) : document.createTextNode(piece.text));
+    list.appendChild(item);
+  }
+  const shown = numbersView(state, view, ui.numbersChoice);
+  byId("check-panel").hidden = shown.hidden;
+  byId("numbers-edit").hidden = !shown.open;
+  list.hidden = shown.open;
+  const toggle = byId("b-numbers");
+  toggle.hidden = !shown.canToggle;
+  toggle.textContent = shown.open ? "Hide numbers" : "Change numbers";
+  toggle.setAttribute("aria-expanded", shown.open ? "true" : "false");
+}
 
-  // "typical value, check with your broker" tags.
+function renderCheckLine(parts) {
+  const box = byId("check-line");
+  if (parts) {
+    byId("check-lead").textContent = parts.lead;
+    byId("check-value").textContent = parts.value;
+    byId("check-tail").textContent = parts.tail;
+    box.hidden = false;
+  } else {
+    byId("check-lead").textContent = "";
+    byId("check-value").textContent = "";
+    byId("check-tail").textContent = "";
+    box.hidden = true;
+  }
+}
+
+function renderProgress(state, view, ui) {
+  const steps = progressSteps(state, view, ui.current);
+  const buttons = document.querySelectorAll("#progress button");
+  steps.forEach((step, index) => {
+    const button = buttons[index];
+    button.parentNode.className = step.status === "todo" ? "" : step.status;
+    button.disabled = !step.clickable;
+    if (step.status === "now") button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
+  });
+  const number = SCREEN_STEP[ui.current];
+  byId("step-count").textContent = "Step " + number + " of 4";
+}
+
+function renderPage(state, view, ui) {
+  syncControls(state);
+  renderErrors(visibleMessages(state, view, ui));
+
+  // "typical value" tags.
   for (const key of PREFILL_KEYS) setHidden("t-" + key, state.tags[key] !== true);
 
   // Instrument type: help and confirmation.
@@ -1326,29 +1678,17 @@ function renderPage(state, view) {
   const cautionNode = byId("c-symbol");
   cautionNode.textContent = caution || "";
   cautionNode.hidden = caution === null;
+  renderNumbers(state, view, ui);
+  renderCheckLine(view.checkParts);
 
   // Risk label.
   byId("l-riskValue").textContent = riskLabel(state);
 
-  // Check line.
-  const check = byId("check-line");
-  if (view.checkLine) {
-    check.textContent = view.checkLine;
-    check.hidden = false;
-  } else {
-    check.textContent = "";
-    check.hidden = true;
-  }
-
-  // Conversion card.
+  // Conversion.
   const labels = conversionLabels(state);
   const instrumentSource = view.conversion.source === "instrument";
-  setHidden("card-conversion", labels === null && !instrumentSource);
   setHidden("conversion-instrument", !instrumentSource || state.instrumentType !== "forex");
   setHidden("conversion-instrument-other", !instrumentSource || state.instrumentType === "forex");
-  setHidden("conversion-explain", instrumentSource);
-  setHidden("conversion-inputs", instrumentSource);
-  setHidden("conversion-pair-warning", instrumentSource || labels === null);
   if (labels !== null) {
     byId("conversion-explain").textContent = labels.explain;
     byId("conversion-lookup").textContent = labels.lookup;
@@ -1365,7 +1705,13 @@ function renderPage(state, view) {
     rate.hidden = true;
   }
 
-  // Loss-limit card.
+  // Costs open by themselves when they hold a value or a mistake.
+  const costs = byId("costs");
+  if (!costs.open && ["extraDistance", "commission", "leverage"].some((key) => state[key] !== "" || view.errors[key])) {
+    costs.open = true;
+  }
+
+  // Loss limits.
   const trailing = state.totalType === "trailing";
   setHidden("w-totalInitial", trailing);
   setHidden("w-totalOf", !trailing);
@@ -1374,7 +1720,16 @@ function renderPage(state, view) {
   setHidden("trailing-note", !trailing);
   byId("guard-status").textContent = view.guard.note || "";
 
-  renderResultInto(view.result);
+  // Screens, header, footer bar.
+  for (const node of document.querySelectorAll(".screen")) node.hidden = node.id !== ui.current;
+  renderProgress(state, view, ui);
+  const footer = footerFor(state, ui.current);
+  byId("b-back").hidden = !footer.showBack;
+  byId("b-next").textContent = footer.nextLabel;
+  document.title = SCREEN_TITLES[ui.current] + " \u00b7 Lotcheck";
+
+  // The lot size exists in the page only while the result screen is shown.
+  renderResultInto(ui.current === "result" ? view.result : null);
 }
 
 function storageAvailable() {
@@ -1387,17 +1742,36 @@ function storageAvailable() {
   }
 }
 
+function prefersReducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function startPage() {
   let state = defaultState();
+  // Navigation is never saved: the page always opens on the first screen.
+  const ui = { current: "account", attempted: {}, numbersChoice: null };
   const canStore = storageAvailable();
   const remember = byId("f-remember");
   const forget = byId("b-forget");
   const forgetStatus = byId("forget-status");
-  const guardBox = byId("guard");
+  const forgetStatusAccount = byId("forget-status-account");
+  const savedNote = byId("saved-note");
+  const forgetAccount = byId("b-forget-account");
+
+  // The note on the first screen shows exactly while saving is on; the status
+  // lines of both places always say the same.
+  function syncSaved(message) {
+    savedNote.hidden = !remember.checked;
+    if (message !== undefined) {
+      forgetStatus.textContent = message;
+      forgetStatusAccount.textContent = message;
+    }
+  }
 
   if (!canStore) {
     remember.disabled = true;
     forget.disabled = true;
+    forgetAccount.disabled = true;
     byId("remember-unavailable").hidden = false;
   } else {
     try {
@@ -1413,7 +1787,6 @@ function startPage() {
       // Reading failed. Start with an empty form.
     }
   }
-  guardBox.open = state.guardOpen === true;
 
   function save() {
     if (!canStore || !remember.checked) return;
@@ -1425,7 +1798,15 @@ function startPage() {
   }
 
   function refresh() {
-    renderPage(state, evaluate(state));
+    let view = evaluate(state);
+    // If a change made an earlier screen invalid, show that screen.
+    const settled = settleScreen(state, view, ui.current);
+    if (settled !== ui.current) {
+      ui.attempted[settled] = true;
+      ui.current = settled;
+      view = evaluate(state);
+    }
+    renderPage(state, view, ui);
     save();
   }
 
@@ -1437,13 +1818,67 @@ function startPage() {
     }
   }
 
+  // Shows a screen. With problems, the first field with a problem is scrolled
+  // into the middle and focused; otherwise the page scrolls to the top and the
+  // heading of the screen gets the focus.
+  function show(id, problems) {
+    const changed = id !== ui.current;
+    ui.current = id;
+    if (problems.length > 0) ui.attempted[id] = true;
+    refresh();
+    const screen = byId(id);
+    if (changed) {
+      screen.classList.remove("enter");
+      void screen.offsetWidth;
+      screen.classList.add("enter");
+    }
+    const calm = prefersReducedMotion();
+    const target = problems.length > 0 ? byId(focusIdFor(problems[0].focus || problems[0].key)) : null;
+    if (target) {
+      target.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
+      target.focus({ preventScroll: true });
+    } else if (changed) {
+      window.scrollTo(0, 0);
+      screen.querySelector("h1").focus({ preventScroll: true });
+    }
+  }
+
+  function go(target) {
+    const view = evaluate(state);
+    const outcome = advance(state, view, ui.current, target);
+    show(outcome.target, outcome.problems);
+  }
+
+  function onNext() {
+    if (ui.current === "result") {
+      const fresh = startNewTrade(state);
+      state = fresh.state;
+      ui.attempted = {};
+      show(fresh.screen, []);
+      return;
+    }
+    go(undefined);
+  }
+
+  function onBack() {
+    const before = prevScreen(state, ui.current);
+    if (before !== null) show(before, []);
+  }
+
   const controls = document.querySelectorAll("[data-key]");
   for (const node of controls) {
     const key = node.getAttribute("data-key");
     if (node.type === "radio") {
       node.addEventListener("change", () => {
         if (!node.checked) return;
-        state = setChoice(state, key, node.value);
+        if (key === "instrumentType") {
+          state = setInstrumentType(state, node.value);
+          ui.numbersChoice = null;
+        } else if (key === "guardOpen") {
+          state = setChoice(state, key, node.value === "true");
+        } else {
+          state = setChoice(state, key, node.value);
+        }
         refresh();
       });
     } else if (node.type === "checkbox") {
@@ -1451,26 +1886,33 @@ function startPage() {
         state = { ...state, [key]: node.checked };
         refresh();
       });
-    } else if (key === "instrumentType") {
-      node.addEventListener("change", () => {
-        state = setInstrumentType(state, node.value);
-        refresh();
-      });
     } else {
       node.addEventListener("input", () => {
         state = editField(state, key, node.value);
+        if (key === "symbol") ui.numbersChoice = null;
         refresh();
+      });
+      node.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.isComposing) return;
+        event.preventDefault();
+        onNext();
       });
     }
   }
 
-  guardBox.addEventListener("toggle", () => {
-    state = { ...state, guardOpen: guardBox.open };
+  byId("b-next").addEventListener("click", onNext);
+  byId("b-back").addEventListener("click", onBack);
+  byId("b-numbers").addEventListener("click", () => {
+    const shown = numbersView(state, evaluate(state), ui.numbersChoice);
+    ui.numbersChoice = !shown.open;
     refresh();
+  });
+  document.querySelectorAll("#progress button").forEach((button) => {
+    button.addEventListener("click", () => go(button.getAttribute("data-go")));
   });
 
   remember.addEventListener("change", () => {
-    forgetStatus.textContent = "";
+    syncSaved("");
     if (remember.checked) {
       save();
     } else {
@@ -1478,12 +1920,15 @@ function startPage() {
     }
   });
 
-  forget.addEventListener("click", () => {
+  function forgetAll() {
     clearSaved();
     remember.checked = false;
-    forgetStatus.textContent = "Saved inputs removed from this browser.";
-  });
+    syncSaved("Saved inputs removed from this browser.");
+  }
+  forget.addEventListener("click", forgetAll);
+  forgetAccount.addEventListener("click", forgetAll);
 
+  syncSaved();
   refresh();
 }
 

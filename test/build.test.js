@@ -117,7 +117,7 @@ test("the page has the required texts", () => {
     "Remember my inputs in this browser",
     "Forget saved inputs",
     "I have checked these numbers in my platform",
-    "I trade an account with loss limits (for example a prop-firm challenge)",
+    "Does your account have loss limits?",
     "Rules differ between firms and change. Take every number from your own firm's current rules. Lotcheck ships no firm presets.",
     "typical value, check with your broker",
     "A stop-loss does not guarantee this loss. Gaps and slippage can make the real loss larger. Lotcheck does not give trading advice.",
@@ -189,7 +189,7 @@ test("every error element has role alert", () => {
 });
 
 test("the result card is a polite live region", () => {
-  assert.match(markupOnly(), /<section class="result" id="result" aria-live="polite"/);
+  assert.match(markupOnly(), /<div class="result" id="result-region" aria-live="polite"/);
 });
 
 test("toggles are real radio inputs and the confirmation is a real checkbox", () => {
@@ -217,7 +217,10 @@ test("every id the script looks up exists in the page", () => {
   }
   // Every error element belongs to a field.
   for (const match of markupOnly().matchAll(/id="e-([^"]+)"/g)) {
-    assert.ok(ids.has("f-" + match[1]), "error element has a field: " + match[1]);
+    // The pair choice, the loss limits as a whole and the tick have no text field
+    // of their own named f-<key>; the pair choice is a group of radios.
+    const own = match[1] === "guard" || match[1] === "convPair";
+    assert.ok(own || ids.has("f-" + match[1]), "error element has a field: " + match[1]);
   }
 });
 
@@ -265,7 +268,7 @@ test("the build keeps comments in the script and the style", () => {
   const topComments = source.split("\n").filter((line) => /^\/\/ \S/.test(line));
   assert.ok(topComments.length > 5, "the page script has comments to check");
   for (const line of topComments) assert.ok(inlineScript().includes(line), "kept: " + line);
-  assert.ok(inlineStyle().includes("/* Result card */"));
+  assert.ok(inlineStyle().includes("/* Result */"));
   const text = transformModule("// keep me\nconst a = 1; // and me\n/* block */\nconst b = 2;\n", "x.js");
   assert.ok(text.includes("// keep me") && text.includes("// and me") && text.includes("/* block */"));
   assert.equal(
@@ -586,10 +589,10 @@ test("a different account currency builds the conversion for either pair choice"
 
 test("the loss-limit input uses only rules that are filled in completely", () => {
   const base = usdForex({ guardOpen: true });
-  // The fields count whether the card is open or collapsed.
+  // With the answer No the fields are ignored completely.
   const closed = { ...base, guardOpen: false, equity: "9800", dailyPercent: "5", dailyOf: "10000", dailyStart: "10000" };
-  assert.equal(app.guardInfo(closed).active, true);
-  assert.equal(app.guardInfo(closed).note, "Applied: daily limit only.");
+  assert.equal(app.guardInfo(closed).active, false);
+  assert.equal(app.guardInfo(closed).note, "Not applied: you answered No.");
   assert.equal(app.guardInfo(closed).block, null);
   assert.equal(app.guardInfo(base).active, false);
   assert.equal(app.guardInfo(base).note, "Not applied: no limit entered yet.");
@@ -676,8 +679,8 @@ test("a half-filled loss rule is never dropped silently", () => {
   const cleared = app.evaluate(usdForex({ guardOpen: true, equity: "10000" }));
   assert.equal(cleared.result.kind, "ok");
   assert.equal(cleared.guard.note, "Not applied: no limit entered yet.");
-  // A collapsed card still counts: a started rule still blocks.
-  assert.equal(app.evaluate(usdForex({ guardOpen: false, dailyPercent: "5" })).result.kind, "waiting");
+  // With the answer No a started rule does not block.
+  assert.equal(app.evaluate(usdForex({ guardOpen: false, dailyPercent: "5" })).result.kind, "ok");
 });
 
 // ---------------------------------------------------------------------------
@@ -1130,7 +1133,7 @@ test("field labels and hints on the page are exact", () => {
   ]) {
     assert.ok(markupOnly().includes(">" + label + "<") || markupOnly().includes(">" + label + "</"), label);
   }
-  assert.match(markupOnly(), /id="f-checked"[^>]*aria-describedby="h-checked"/);
+  assert.match(markupOnly(), /id="f-checked"[^>]*aria-describedby="h-checked e-checked"/);
   assert.match(markupOnly(), /id="f-remember"[^>]*aria-describedby="h-remember"/);
 });
 
@@ -1189,7 +1192,8 @@ test("every message code has plain words", () => {
 
 test("the page never gives advice words", () => {
   const source = readFileSync(join(root, "src/ui/app.js"), "utf8") + html;
-  assert.ok(!/\bsafe\b/i.test(source.replace(/safe integers?/gi, "")), "never calls a trade safe");
+  const plain = source.replace(/safe integers?/gi, "").replace(/env\(safe-area-inset-bottom\)/g, "");
+  assert.ok(!/\bsafe\b/i.test(plain), "never calls a trade safe");
   assert.ok(!/\b(buy now|sell now|signal)\b/i.test(source));
 });
 
@@ -1321,51 +1325,54 @@ test("the status line matches the state of each rule", () => {
   assert.equal(app.guardInfo(usdForex({ ...full, ...daily, dailyPercent: "5%" })).active, false);
   assert.match(app.guardInfo(usdForex({ ...full, ...daily, dailyPercent: "0" })).block, /Daily limit \(percent\)/);
   // No equity: rules cannot apply.
-  assert.equal(app.guardInfo(usdForex({ ...daily, ...total })).note, "Not applied yet: the daily limit and the total limit are not finished.");
-  // The page says it: the status line sits outside the collapsible part.
+  assert.equal(app.guardInfo(usdForex({ guardOpen: true, ...daily, ...total })).note, "Not applied yet: the daily limit and the total limit are not finished.");
+  // The answer No overrides every other state.
+  assert.equal(note({ guardOpen: false, ...daily, ...total }), "Not applied: you answered No.");
+  // The page says it: the status line sits above the limit fields.
   const m = markupOnly();
-  assert.ok(m.indexOf('id="guard-status"') < m.indexOf('<details id="guard"'));
+  assert.ok(m.indexOf('id="guard-status"') < m.indexOf('id="w-equity"'));
 });
 
-test("a complete rule keeps capping the size when the card is collapsed", () => {
+test("with the answer No, loss rules are ignored: complete, half-filled or wrong", () => {
   const rule = { equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000", buffer: "0" };
-  const open = app.evaluate(usdForex({ ...rule, guardOpen: true, riskValue: "5" }));
-  const closed = app.evaluate(usdForex({ ...rule, guardOpen: false, riskValue: "5" }));
-  assert.equal(closed.result.headline, open.result.headline);
-  assert.equal(closed.result.headline, "0.50 lots");
-  assert.equal(closed.guard.active, true);
-  assert.ok(closed.result.guard, "the room table is shown");
-  const uncapped = app.evaluate(usdForex({ riskValue: "5" }));
-  assert.equal(uncapped.result.headline, "2.50 lots");
-  // An error in a collapsed loss-limit field still blocks the result.
-  const bad = app.evaluate(usdForex({ ...rule, guardOpen: false, dailyPercent: "5%" }));
-  assert.equal(bad.result.kind, "waiting");
-  assert.ok(bad.errors.dailyPercent);
+  const none = app.evaluate(usdForex({ riskValue: "5" }));
+  const no = app.evaluate(usdForex({ ...rule, guardOpen: false, riskValue: "5" }));
+  assert.equal(no.result.headline, none.result.headline);
+  assert.equal(no.result.headline, "2.50 lots");
+  assert.equal(no.guard.active, false);
+  assert.equal(no.guard.note, "Not applied: you answered No.");
+  assert.equal(no.result.guard, null, "no room block");
+  assert.deepEqual(no.result.rows.find((r) => r[0] === "Loss limits"), ["Loss limits", "Not applied"]);
+  const yes = app.evaluate(usdForex({ ...rule, guardOpen: true, riskValue: "5" }));
+  assert.equal(yes.result.headline, "0.50 lots");
+  assert.equal(yes.guard.active, true);
+  assert.ok(yes.result.guard, "the room table is shown");
+  assert.equal(yes.result.rows.find((r) => r[0] === "Loss limits"), undefined);
+  assert.equal(yes.result.rows.find((r) => r[0] === "Limited by")[1], "Your daily loss limit");
+  // A half-filled rule neither blocks nor reports an error with No, and blocks with Yes.
+  const half = { equity: "9000", dailyStart: "1", dailyPercent: "5%", totalPercent: "5" };
+  const halfNo = app.evaluate(usdForex({ ...half, guardOpen: false }));
+  assert.equal(halfNo.result.kind, "ok");
+  assert.deepEqual(halfNo.errors, {});
+  const halfYes = app.evaluate(usdForex({ ...half, guardOpen: true }));
+  assert.equal(halfYes.result.kind, "waiting");
+  assert.ok(halfYes.errors.dailyPercent);
 });
 
-test("a tiny pip value never prints as zero in the result row", () => {
-  const state = {
-    ...app.setInstrumentType(app.defaultState(), "crypto"),
-    accountCurrency: "USD",
-    balance: "10000",
-    symbol: "SHIBUSD",
-    quoteCurrency: "USD",
-    contractSize: "1",
-    pipSize: "0.00000001",
-    minLot: "1",
-    lotStep: "1",
-    entry: "0.00002",
-    stop: "0.00001",
-    checked: true,
-  };
-  const view = app.evaluate(state);
-  assert.equal(view.result.kind, "ok");
-  const row = view.result.rows.find((r) => r[0].startsWith("Value of one"));
-  assert.equal(row[1], "0.000000010 USD");
-  assert.notEqual(row[1], "0.00 USD");
-  assert.equal(app.pipValueText(Q.of("0.004"), "USD"), "0.0040");
-  assert.equal(app.pipValueText(Q.of("12.349"), "USD"), "12.34");
-  assert.equal(app.pipValueText(Q.of("0.4"), "JPY"), "0.40");
+test("switching No, Yes, No keeps the typed limit values", () => {
+  let state = usdForex({ equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000" });
+  assert.equal(state.guardOpen, false);
+  state = app.setChoice(state, "guardOpen", true);
+  assert.equal(state.guardOpen, true);
+  assert.equal(app.evaluate(state).guard.active, true);
+  state = app.setChoice(state, "guardOpen", false);
+  assert.equal(state.dailyPercent, "1");
+  assert.equal(state.equity, "10000");
+  assert.equal(app.evaluate(state).guard.active, false);
+  state = app.setChoice(state, "guardOpen", true);
+  assert.equal(app.evaluate(state).guard.active, true);
+  assert.equal(app.defaultState().guardOpen, false, "the default answer is No");
+  assert.ok(!app.SAVED_KEYS.includes("guardOpen"), "the answer is not saved");
 });
 
 test("the build scanner and syntax check", () => {
@@ -1453,7 +1460,7 @@ test("the comment above serializeState describes the saved scope", () => {
 
 test("the built page asks for the confirmation tick for every instrument type", () => {
   assert.ok(html.includes("I have checked these numbers in my platform"));
-  assert.ok(html.includes("Required before any lot size is shown. Changing the account currency or a field in this card unticks it."));
+  assert.ok(html.includes("Required before any lot size is shown. Changing the account currency or any instrument field unticks it."));
   assert.ok(!/id="confirm-wrap"[^>]*hidden/.test(html), "the confirmation is never hidden");
   assert.ok(!inlineScript().includes("confirm-wrap\").hidden"), "the script never hides the confirmation");
 });
@@ -1539,4 +1546,443 @@ test("a base currency that contradicts the symbol is an error at once", () => {
   assert.equal(app.baseConflict(state), false);
   assert.equal(app.baseConflict({ ...edited, baseCurrency: "" }), false);
   assert.equal(app.baseConflict({ ...edited, symbol: "EURJPY" }), false);
+});
+
+// ---------------------------------------------------------------------------
+// The six screens: which exist, what blocks them, where Next goes
+// ---------------------------------------------------------------------------
+
+function complete(extra) {
+  return usdForex(extra);
+}
+function viewOf(state) {
+  return app.evaluate(state);
+}
+function eurGbp(extra) {
+  const base = app.editField(app.defaultState(), "symbol", "EURGBP");
+  return { ...base, accountCurrency: "USD", balance: "10000", riskValue: "1", entry: "0.85500", stop: "0.85300", checked: true, ...extra };
+}
+
+test("the screens that exist follow the conversion and the loss-limit answer", () => {
+  assert.deepEqual(app.screensFor(complete({})), ["account", "instrument", "trade", "result"]);
+  assert.deepEqual(app.screensFor(complete({ guardOpen: true })), ["account", "instrument", "trade", "limits", "result"]);
+  assert.deepEqual(app.screensFor(eurGbp({})), ["account", "instrument", "conversion", "trade", "result"]);
+  assert.deepEqual(app.screensFor(eurGbp({ guardOpen: true })), ["account", "instrument", "conversion", "trade", "limits", "result"]);
+});
+
+test("next and previous screens", () => {
+  const s = eurGbp({ guardOpen: true });
+  assert.equal(app.nextScreen(s, "account"), "instrument");
+  assert.equal(app.nextScreen(s, "instrument"), "conversion");
+  assert.equal(app.nextScreen(s, "trade"), "limits");
+  assert.equal(app.nextScreen(s, "result"), null);
+  assert.equal(app.prevScreen(s, "account"), null);
+  assert.equal(app.prevScreen(s, "result"), "limits");
+  assert.equal(app.prevScreen(complete({}), "result"), "trade");
+});
+
+test("empty required fields give 'Enter the <label>.' and are not live", () => {
+  const blank = app.defaultState();
+  const problems = app.screenProblems(blank, viewOf(blank), "account");
+  assert.deepEqual(problems.map((p) => p.key), ["accountCurrency", "balance"]);
+  assert.equal(problems[0].message, "Enter the account currency.");
+  assert.ok(problems.every((p) => p.live === false));
+  assert.equal(app.emptyMessage("balance"), "Enter the account balance.");
+  assert.equal(app.emptyMessage("convPair"), "Choose which price you are entering.");
+  const trade = app.screenProblems(blank, viewOf(blank), "trade");
+  assert.deepEqual(trade.map((p) => p.key), ["entry", "stop"]);
+});
+
+test("format errors are live problems", () => {
+  const s = complete({ balance: "10 000" });
+  const problems = app.screenProblems(s, viewOf(s), "account");
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].key, "balance");
+  assert.equal(problems[0].live, true);
+});
+
+test("the tick is a problem on the instrument screen until it is set", () => {
+  const s = complete({ checked: false });
+  const problems = app.screenProblems(s, viewOf(s), "instrument");
+  assert.deepEqual(problems, [{ key: "checked", message: "Tick the box once you have compared the numbers.", live: false }]);
+  assert.deepEqual(app.screenProblems(complete({}), viewOf(complete({})), "instrument"), []);
+});
+
+test("the conversion screen needs the pair choice and the price", () => {
+  const s = eurGbp({});
+  const keys = app.screenProblems(s, viewOf(s), "conversion").map((p) => p.key);
+  assert.deepEqual(keys, ["convPair", "convPrice"]);
+  assert.equal(app.focusIdFor("convPair"), "conv-aq");
+  assert.equal(app.focusIdFor("guard"), "f-equity");
+  assert.equal(app.focusIdFor("entry"), "f-entry");
+});
+
+test("the limits screen blocks on empty and half-filled rules, only for Yes", () => {
+  const yes = complete({ guardOpen: true });
+  const empty = app.screenProblems(yes, viewOf(yes), "limits");
+  assert.deepEqual(empty, [{ key: "guard", message: "Enter at least one complete limit, or go back and answer No.", live: false }]);
+  const half = complete({ guardOpen: true, equity: "9000", dailyPercent: "5" });
+  assert.ok(app.screenProblems(half, viewOf(half), "limits").some((p) => p.key === "guard"));
+  const done = complete({ guardOpen: true, equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000" });
+  assert.deepEqual(app.screenProblems(done, viewOf(done), "limits"), []);
+  const no = complete({ guardOpen: false });
+  assert.deepEqual(app.screenProblems(no, viewOf(no), "limits"), []);
+});
+
+test("the result screen has no problems of its own", () => {
+  assert.deepEqual(app.screenProblems(complete({}), viewOf(complete({})), "result"), []);
+  assert.deepEqual(app.screenProblems(complete({}), viewOf(complete({})), "nowhere"), []);
+});
+
+test("the first screen with a problem is found in page order", () => {
+  const s = complete({ balance: "", checked: false });
+  assert.equal(app.firstScreenWithProblem(s, viewOf(s), null), "account");
+  const t = complete({ checked: false });
+  assert.equal(app.firstScreenWithProblem(t, viewOf(t), null), "instrument");
+  assert.equal(app.firstScreenWithProblem(t, viewOf(t), "instrument"), null);
+  assert.equal(app.firstScreenWithProblem(complete({}), viewOf(complete({})), null), null);
+});
+
+test("footer buttons", () => {
+  const s = complete({});
+  assert.deepEqual(app.footerFor(s, "account"), { showBack: false, nextLabel: "Next" });
+  assert.deepEqual(app.footerFor(s, "instrument"), { showBack: true, nextLabel: "Next" });
+  assert.deepEqual(app.footerFor(s, "trade"), { showBack: true, nextLabel: "Show result" });
+  assert.deepEqual(app.footerFor(complete({ guardOpen: true }), "trade"), { showBack: true, nextLabel: "Next" });
+  assert.deepEqual(app.footerFor(complete({ guardOpen: true }), "limits"), { showBack: true, nextLabel: "Show result" });
+  assert.deepEqual(app.footerFor(s, "result"), { showBack: true, nextLabel: "New trade" });
+});
+
+test("the progress line has four steps and the right ones can be clicked", () => {
+  const s = complete({});
+  const steps = app.progressSteps(s, viewOf(s), "instrument");
+  assert.deepEqual(steps.map((x) => x.label), ["Account", "Instrument", "Trade", "Result"]);
+  assert.deepEqual(steps.map((x) => x.status), ["done", "now", "todo", "todo"]);
+  assert.deepEqual(steps.map((x) => x.clickable), [true, false, true, true]);
+  // A conversion screen belongs to the Instrument step, limits to Trade.
+  assert.equal(app.progressSteps(eurGbp({}), viewOf(eurGbp({})), "conversion")[1].status, "now");
+  const g = complete({ guardOpen: true, equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000" });
+  assert.equal(app.progressSteps(g, viewOf(g), "limits")[2].status, "now");
+  // With a problem on an earlier screen, later steps cannot be opened.
+  const bad = complete({ balance: "" });
+  const gated = app.progressSteps(bad, viewOf(bad), "account");
+  assert.deepEqual(gated.map((x) => x.clickable), [false, false, false, false]);
+});
+
+test("Next stays on a screen with a problem and moves on without one", () => {
+  const bad = complete({ checked: false });
+  const stay = app.advance(bad, viewOf(bad), "instrument");
+  assert.equal(stay.target, "instrument");
+  assert.equal(stay.problems[0].key, "checked");
+  const good = complete({});
+  assert.deepEqual(app.advance(good, viewOf(good), "instrument"), { target: "trade", problems: [] });
+  assert.deepEqual(app.advance(good, viewOf(good), "trade"), { target: "result", problems: [] });
+  assert.deepEqual(app.advance(good, viewOf(good), "result", "trade"), { target: "trade", problems: [] });
+});
+
+test("the result is gated: a jump from the progress line stops at the first problem", () => {
+  const s = complete({ balance: "" });
+  const jump = app.advance(s, viewOf(s), "instrument", "result");
+  assert.equal(jump.target, "account");
+  assert.equal(jump.problems[0].key, "balance");
+  // Going back is never blocked.
+  assert.deepEqual(app.advance(s, viewOf(s), "trade", "account"), { target: "account", problems: [] });
+});
+
+test("settling the screen after a change", () => {
+  const good = complete({});
+  assert.equal(app.settleScreen(good, viewOf(good), "result"), "result");
+  const bad = complete({ stop: "" });
+  assert.equal(app.settleScreen(bad, viewOf(bad), "result"), "trade");
+  assert.equal(app.settleScreen(good, viewOf(good), "limits"), "trade");
+  assert.equal(app.settleScreen(good, viewOf(good), "conversion"), "instrument");
+  assert.equal(app.settleScreen(good, viewOf(good), "trade"), "trade");
+});
+
+test("New trade clears entry, stop and conversion price and keeps the rest", () => {
+  const s = eurGbp({ convPair: "quote-account", convPrice: "1.25000", commission: "3", guardOpen: true, equity: "10000" });
+  const out = app.startNewTrade(s);
+  assert.equal(out.state.entry, "");
+  assert.equal(out.state.stop, "");
+  assert.equal(out.state.convPrice, "");
+  assert.equal(out.state.checked, true, "the tick stays");
+  assert.equal(out.state.balance, "10000");
+  assert.equal(out.state.commission, "3");
+  assert.equal(out.state.guardOpen, true);
+  assert.equal(out.screen, "conversion");
+  assert.equal(app.startNewTrade(complete({})).screen, "trade");
+});
+
+test("no screen problem means the result is not the waiting kind, for both answers", () => {
+  const rule = { equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000" };
+  const symbols = ["EURUSD", "EURGBP", "XAUUSD", "US30", "BTCUSD"];
+  const mutations = [
+    {},
+    { balance: "" },
+    { entry: "" },
+    { stop: "" },
+    { checked: false },
+    { riskValue: "" },
+    { entry: "abc" },
+    { stop: "1.08500" },
+    { convPrice: "1.25" },
+    { convPair: "quote-account", convPrice: "1.25" },
+    { convPair: "quote-account", convPrice: "x" },
+    { minLot: "" },
+    { lotStep: "0" },
+    { maxLot: "abc" },
+    { equity: "9000", dailyPercent: "5" },
+    { ...rule },
+    { symbol: "", baseCurrency: "", quoteCurrency: "", contractSize: "", pipSize: "", minLot: "", lotStep: "", maxLot: "" },
+    { symbol: "", baseCurrency: "", quoteCurrency: "", contractSize: "", pipSize: "", minLot: "", lotStep: "", maxLot: "", instrumentType: "index" },
+  ];
+  let checked = 0;
+  const seen = new Set();
+  for (const symbol of symbols) {
+    for (const guardOpen of [false, true]) {
+      for (const mutation of mutations) {
+        let s = app.editField(app.defaultState(), "symbol", symbol);
+        if (symbol !== "EURUSD" && symbol !== "EURGBP") {
+          s = app.setInstrumentType(s, symbol === "BTCUSD" ? "crypto" : symbol === "US30" ? "index" : "metal");
+          s = { ...s, quoteCurrency: "USD", contractSize: "100", pipSize: "0.01", minLot: "0.01", lotStep: "0.01" };
+        }
+        s = { ...s, accountCurrency: "USD", balance: "10000", riskValue: "1", entry: "1.08500", stop: "1.08300", checked: true, guardOpen, ...(symbol === "EURGBP" ? { convPair: "quote-account", convPrice: "1.25" } : {}), ...mutation };
+        const view = viewOf(s);
+        const none = app.screensFor(s).filter((id) => id !== "result").every((id) => app.screenProblems(s, view, id).length === 0);
+        if (none) {
+          checked += 1;
+          seen.add(view.result.kind);
+          assert.notEqual(view.result.kind, "waiting", JSON.stringify({ symbol, guardOpen, mutation }));
+        }
+      }
+    }
+  }
+  assert.ok(checked > 20, "the property was exercised: " + checked);
+  assert.ok(seen.has("ok"));
+});
+
+test("numbers intro, plain sentences and the toggle", () => {
+  const s = complete({});
+  assert.equal(app.numbersIntro(s), "Typical values for EURUSD. Brokers differ.");
+  const edited = app.editField(s, "contractSize", "50000");
+  assert.equal(app.numbersIntro(edited), "Your numbers for EURUSD.");
+  const [first, second] = app.plainNumberLines(s);
+  assert.deepEqual(first, [{ text: "1.00 lot is " }, { text: "100000 EUR", strong: true }]);
+  assert.equal(second.map((p) => p.text).join(""), "Sizes start at 0.01 lot, in steps of 0.01");
+  const withMax = app.plainNumberLines(complete({ maxLot: "50" }))[1];
+  assert.equal(withMax.map((p) => p.text).join(""), "Sizes start at 0.01 lot, in steps of 0.01, up to 50");
+  assert.deepEqual(app.numbersView(s, viewOf(s), null), { open: false, forced: false, canToggle: true, hidden: false });
+  assert.equal(app.numbersView(s, viewOf(s), true).open, true);
+  assert.equal(app.numbersView(edited, viewOf(edited), null).open, true);
+  const missing = complete({ minLot: "" });
+  assert.deepEqual(app.numbersView(missing, viewOf(missing), false), { open: true, forced: true, canToggle: false, hidden: false });
+});
+
+// ---------------------------------------------------------------------------
+// The built page
+// ---------------------------------------------------------------------------
+
+test("the page has six screens, one heading each, four type radios and no select", () => {
+  const m = markupOnly();
+  for (const id of ["account", "instrument", "conversion", "trade", "limits", "result"]) {
+    const start = m.indexOf('<section class="screen" id="' + id + '"');
+    assert.ok(start >= 0, "screen " + id);
+    const rest = m.slice(start + 10);
+    const stop = rest.search(/<section class="screen"|<footer/);
+    const block = rest.slice(0, stop < 0 ? undefined : stop);
+    assert.equal((block.match(/<h1[\s>]/g) || []).length, 1, "one h1 in " + id);
+  }
+  assert.equal((m.match(/type="radio"[^>]*name="instrumentType"/g) || []).length, 4);
+  assert.ok(!/<select/.test(m));
+  assert.ok(m.includes("Check this first"));
+  assert.ok(m.includes("Show result") || inlineScript().includes("Show result"));
+  assert.ok(m.includes("Does your account have loss limits?"));
+  assert.ok(m.includes("For example a prop-firm challenge."));
+  assert.ok(m.includes("Version "));
+});
+
+test("the page has no inline style attributes and the script never uses innerHTML", () => {
+  assert.ok(!/\sstyle=/.test(markupOnly()));
+  assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|eval\(/.test(inlineScript()));
+  assert.equal((html.match(/<style[\s>]/g) || []).length, 1);
+  assert.equal((html.match(/<script[\s>]/g) || []).length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// First view of the instrument screen, loss-limit focus, headline, styles
+// ---------------------------------------------------------------------------
+
+function blankForex(extra) {
+  return { ...app.defaultState(), accountCurrency: "USD", balance: "10000", riskValue: "1", ...extra };
+}
+
+test("an empty forex instrument screen hides the check panel and has one problem", () => {
+  const s = blankForex({});
+  assert.equal(app.instrumentIsBlank(s), true);
+  assert.equal(app.numbersView(s, viewOf(s), null).hidden, true);
+  assert.deepEqual(app.screenProblems(s, viewOf(s), "instrument"), [
+    { key: "symbol", message: "Enter a symbol, for example EURUSD.", live: false },
+  ]);
+  assert.equal(app.focusIdFor("symbol"), "f-symbol");
+  // A symbol that normalises to nothing counts as empty.
+  assert.equal(app.instrumentIsBlank({ ...s, symbol: " -/ " }), true);
+});
+
+test("the check panel comes back with a symbol, any filled field or another type", () => {
+  const s = blankForex({});
+  const typed = app.editField(s, "symbol", "EURUSD");
+  assert.equal(app.instrumentIsBlank(typed), false);
+  assert.equal(app.numbersView(typed, viewOf(typed), null).hidden, false);
+  for (const key of ["baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep", "maxLot"]) {
+    const t = { ...s, [key]: "1" };
+    assert.equal(app.instrumentIsBlank(t), false, key);
+    assert.equal(app.numbersView(t, viewOf(t), null).hidden, false, key);
+  }
+  const index = app.setInstrumentType(s, "index");
+  assert.equal(app.instrumentIsBlank(index), false);
+  const keys = app.screenProblems(index, viewOf(index), "instrument").map((p) => p.key);
+  assert.ok(keys.includes("quoteCurrency") && keys.includes("checked") && !keys.includes("symbol"));
+  // With a symbol but nothing else the old behaviour holds.
+  const partial = { ...blankForex({}), symbol: "ZZZZZZ" };
+  assert.ok(app.screenProblems(partial, viewOf(partial), "instrument").length > 1);
+});
+
+test("a blocked loss-limit screen points at the first field still needed", () => {
+  const daily = { dailyPercent: "5", dailyOf: "10000" };
+  const half = complete({ guardOpen: true, equity: "10000", ...daily });
+  const problem = app.screenProblems(half, viewOf(half), "limits")[0];
+  assert.equal(problem.key, "guard");
+  assert.equal(app.focusIdFor(problem.focus), "f-dailyStart");
+  const noEquity = complete({ guardOpen: true, ...daily, dailyStart: "10000" });
+  assert.equal(app.screenProblems(noEquity, viewOf(noEquity), "limits")[0].focus, "equity");
+  const total = complete({ guardOpen: true, equity: "10000", totalPercent: "10" });
+  assert.equal(app.screenProblems(total, viewOf(total), "limits")[0].focus, "totalInitial");
+  // Nothing entered: no focus override, so the page focuses Current equity.
+  const empty = complete({ guardOpen: true });
+  const none = app.screenProblems(empty, viewOf(empty), "limits")[0];
+  assert.equal(none.focus, undefined);
+  assert.equal(app.focusIdFor(none.key), "f-equity");
+});
+
+test("the layout fixes are in the page and the style", () => {
+  const m = markupOnly();
+  const css = inlineStyle();
+  // Non-forex help is a closed details element.
+  assert.match(m, /<details class="more" id="nonforex-help" hidden>\s*<summary>Where to find these numbers<\/summary>/);
+  // Trade order: costs, loss-limit question, What is this? last.
+  const trade = m.slice(m.indexOf('id="trade"'), m.indexOf('id="limits"'));
+  assert.ok(trade.indexOf('id="costs"') < trade.indexOf('id="fs-guardOpen"'));
+  assert.ok(trade.indexOf('id="fs-guardOpen"') < trade.indexOf("<summary>What is this?</summary>"));
+  assert.match(css, /\.guard-question\s*\{[^}]*margin-top:\s*(2[4-9]|[3-9]\d)px/);
+  // The remember row has its own class, and nothing else uses the panel class.
+  assert.match(m, /<label class="remember" for="f-remember">/);
+  assert.equal((m.match(/class="check"/g) || []).length, 1);
+  // Notes are not boxed like fields.
+  assert.match(css, /\.lookup,\s*\.rate-line\s*\{[^}]*border-left:\s*2px solid var\(--accent\)/);
+  // Subgrid rows line the inputs up, only where supported.
+  assert.ok(css.includes("@supports (grid-template-rows: subgrid)"));
+  assert.ok(css.includes("clamp("));
+  assert.ok(css.includes("@media (max-width: 379px)"));
+});
+
+test("the headline is one phrase made of a number node and a unit node", () => {
+  const script = inlineScript();
+  assert.ok(script.includes('"lots-number"') && script.includes('"lots-unit"'));
+  assert.ok(!script.includes('makeNode("p", "lots", model.headline)'));
+  assert.match(app.evaluate(usdForex({})).result.headline, /^\d+\.\d\d lots$/);
+});
+
+test("a tiny pip value never prints as zero in the result row", () => {
+  const state = {
+    ...app.setInstrumentType(app.defaultState(), "crypto"),
+    accountCurrency: "USD",
+    balance: "10000",
+    symbol: "SHIBUSD",
+    quoteCurrency: "USD",
+    contractSize: "1",
+    pipSize: "0.00000001",
+    minLot: "1",
+    lotStep: "1",
+    entry: "0.00002",
+    stop: "0.00001",
+    checked: true,
+  };
+  const view = app.evaluate(state);
+  assert.equal(view.result.kind, "ok");
+  const row = view.result.rows.find((r) => r[0].startsWith("Value of one"));
+  assert.equal(row[1], "0.000000010 USD");
+  assert.notEqual(row[1], "0.00 USD");
+  assert.equal(app.pipValueText(Q.of("0.004"), "USD"), "0.0040");
+  assert.equal(app.pipValueText(Q.of("12.349"), "USD"), "12.34");
+  assert.equal(app.pipValueText(Q.of("0.4"), "JPY"), "0.40");
+});
+
+test("the account screen has a note and a forget button, hidden in the markup", () => {
+  const m = markupOnly();
+  assert.match(m, /<div class="saved-note" id="saved-note" hidden>/);
+  assert.ok(m.includes("Inputs saved in this browser were filled in."));
+  assert.match(m, /<button type="button" class="plain-button" id="b-forget-account">Forget saved inputs<\/button>/);
+  assert.match(m, /id="forget-status-account" role="status"/);
+  const account = m.slice(m.indexOf('id="account"'), m.indexOf('id="instrument"'));
+  assert.ok(account.indexOf('id="saved-note"') < account.indexOf("<summary>What is this?</summary>"));
+  // The result screen keeps its own block.
+  assert.ok(m.includes('id="b-forget"'));
+  const script = inlineScript();
+  assert.ok(script.includes("b-forget-account") && script.includes("saved-note"));
+});
+
+test("the tag keeps its full caution text on all six pre-filled fields", () => {
+  const m = markupOnly();
+  for (const key of ["baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep"]) {
+    assert.ok(m.includes('id="t-' + key + '" hidden>typical value, check with your broker</p>'), key);
+  }
+  assert.ok(!m.includes(">typical value</p>"));
+});
+
+test("the current step opens its main screen from conversion and limits", () => {
+  const conv = eurGbp({ convPair: "quote-account", convPrice: "1.25" });
+  const onConv = app.progressSteps(conv, viewOf(conv), "conversion");
+  assert.equal(onConv[1].status, "now");
+  assert.equal(onConv[1].clickable, true);
+  assert.equal(onConv[1].screen, "instrument");
+  const onInstrument = app.progressSteps(conv, viewOf(conv), "instrument");
+  assert.equal(onInstrument[1].clickable, false);
+  const g = complete({ guardOpen: true, equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000" });
+  const onLimits = app.progressSteps(g, viewOf(g), "limits");
+  assert.equal(onLimits[2].clickable, true);
+  assert.equal(app.progressSteps(g, viewOf(g), "trade")[2].clickable, false);
+  assert.equal(app.progressSteps(g, viewOf(g), "account")[0].clickable, false);
+  assert.equal(app.progressSteps(complete({}), viewOf(complete({})), "result")[3].clickable, false);
+});
+
+test("a forward move stops at the first screen with a problem before the target", () => {
+  const s = complete({ checked: false });
+  const out = app.advance(s, viewOf(s), "account", "trade");
+  assert.equal(out.target, "instrument");
+  assert.equal(out.problems[0].key, "checked");
+  // Without a problem on the way the target is reached.
+  const ok = complete({});
+  assert.deepEqual(app.advance(ok, viewOf(ok), "account", "trade"), { target: "trade", problems: [] });
+  // A problem on the current screen comes first.
+  const bad = complete({ balance: "", checked: false });
+  assert.equal(app.advance(bad, viewOf(bad), "account", "trade").target, "account");
+  // A problem on the target itself does not stop the move.
+  const noStop = complete({ stop: "" });
+  assert.equal(app.advance(noStop, viewOf(noStop), "instrument", "trade").target, "trade");
+  // Screens before the current one are not looked at, except for the result.
+  assert.equal(app.advance(noStop, viewOf(noStop), "trade", "result").target, "trade");
+});
+
+test("a format error in a limit field takes the focus after a blocked Next", () => {
+  const s = complete({ guardOpen: true, equity: "10000", dailyPercent: "5%", dailyOf: "10000", dailyStart: "10000" });
+  const view = viewOf(s);
+  assert.ok(view.errors.dailyPercent, "the format error is live");
+  const problems = app.screenProblems(s, view, "limits");
+  const first = problems[0];
+  assert.equal(app.focusIdFor(first.focus || first.key), "f-dailyPercent");
+  // A format error in a later field, with the earlier rule complete.
+  const later = complete({ guardOpen: true, equity: "10000", dailyPercent: "1", dailyOf: "10000", dailyStart: "10000", buffer: "1,5" });
+  const p2 = app.screenProblems(later, viewOf(later), "limits");
+  assert.equal(p2.length, 1);
+  assert.equal(app.focusIdFor(p2[0].focus || p2[0].key), "f-buffer");
 });

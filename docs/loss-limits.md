@@ -26,7 +26,7 @@ In Lotcheck the total limit toggle has "Fixed floor" and "Trailing floor". The p
 
 ## Answer these from your firm's rules first
 
-The page shows a short list with this title inside the loss-limits card:
+The page shows a short list with this title on the Loss limits screen:
 
 - Is the daily limit a percent of the starting balance or of the day-start value?
 - Is the day-start value the balance or the equity, and at what time does the day reset?
@@ -47,7 +47,7 @@ Answer these before you fill in Lotcheck. If the rule page does not say clearly,
 
 ## Where each answer goes in Lotcheck
 
-Open the card "I trade an account with loss limits (for example a prop-firm challenge)". The field labels below are the ones on the page.
+On the Trade step, answer Yes to "Does your account have loss limits?". Next then opens the Loss limits screen. The field labels below are the ones on that screen.
 
 | Your answer | Lotcheck field |
 |---|---|
@@ -69,11 +69,13 @@ The total limit has a toggle with two options: "Fixed floor" (a static limit) an
 
 A rule (daily or total) counts as started when any of its own fields has text. It counts as complete when all of its required fields hold a valid number above 0. A field holding "5%" or "0" leaves the rule unfinished, and the field shows its own error text.
 
-The loss-limit fields count whether the card is open or collapsed. A complete rule keeps limiting the size when the card is closed.
+Loss limits are applied only while the answer to "Does your account have loss limits?" is Yes. If you answer No, the numbers you typed stay in the fields but are ignored, and the result shows "Loss limits: Not applied". Answer Yes again and they count again.
 
-While any rule is started but not complete, Lotcheck shows no lot size. The result says: "Finish or clear the daily limit fields first. Still needed: ..." (or "total limit"), and lists the missing fields. If a rule is started and "Current equity" is empty, equity is listed as needed.
+With Yes, Next does not leave the Loss limits screen until at least one rule is complete. The message is: "Enter at least one complete limit, or go back and answer No."
 
-A status line sits above the fields, outside the part that folds away, so it is always visible. It shows exactly one of these:
+While any rule is started but not complete, Lotcheck shows no lot size and Next does not open the result. The Loss limits screen says: "Finish or clear the daily limit fields first. Still needed: ..." (or "total limit"), and lists the missing fields. If a rule is started and "Current equity" is empty, equity is listed as needed.
+
+A status line sits at the top of the Loss limits screen. It shows exactly one of these:
 
 - "Not applied: no limit entered yet."
 - "Applied: daily limit and total limit."
@@ -89,7 +91,7 @@ You can fill in only the daily limit, only the total limit, or both. If both are
 
 ## The trailing floor is a snapshot
 
-Lotcheck calculates the room from the floor as it is right now. When the total limit is "Trailing floor", the page shows this line in the card and under the room table in the result: "This room assumes the floor does not move while the trade is open. If your firm's floor follows equity, profit made before the stop raises the floor, and the stop can then break the limit."
+Lotcheck calculates the room from the floor as it is right now. When the total limit is "Trailing floor", the page shows this line on the Loss limits screen and under the room table in the result: "This room assumes the floor does not move while the trade is open. If your firm's floor follows equity, profit made before the stop raises the floor, and the stop can then break the limit."
 
 A small example. The total limit is 10% of 10,000, and the highest value reached is 10,400, which is also your current equity.
 
@@ -116,5 +118,5 @@ If your equity is at or below a limit, no size is shown. If there is no room lef
 ## Things to keep in mind
 
 - A stop-loss does not guarantee the loss. A gap or slippage can make the real loss larger than the room. Use "Room to keep unused" for a margin of your own.
-- Spread and commission count. Enter them in the trade card.
+- Spread and commission count. Enter them under "Add costs" on the Trade step.
 - The numbers you enter are only as good as your reading of the rules. A wrong day-start value or limit gives a wrong room. For the formulas, see [how-it-works.md](how-it-works.md), step 9.

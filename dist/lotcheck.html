@@ -1,40 +1,52 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-YONBHITTp5XGne3Y1IdWysc1NDBHB7TaduniuwzPAI4='; style-src 'sha256-eeeOb9G/KJSOC9LTGkj9wRoM01UF242EqzAu7NFgRCE='; img-src data:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KMk3ZaHXOJNZROUJLG3UkblfF/MVYfCShmtn9Nc0fPo='; style-src 'sha256-+roa9isl571A2Ulu5j5vMY5FEFoE79R8YqGvs8cI9Sg='; img-src data:; base-uri 'none'; form-action 'none'">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
 <title>Lotcheck</title>
 <style>
+/* Colours. The page follows the device setting: light tokens by default,
+   dark tokens when the device asks for a dark scheme. */
 :root {
-  --bg: #f7f7f5;
+  --bg: #f1f1ee;
   --card: #ffffff;
-  --border: #deded9;
-  --text: #1c1c1a;
-  --muted: #55554f;
-  --accent: #1f5fd1;
-  --caution: #9a5b00;
-  --caution-bg: #fff6e5;
-  --stop: #a4262c;
-  --stop-bg: #fdecec;
-  --shadow: rgba(28, 28, 26, 0.12);
+  --field: #fafaf8;
+  --ink: #111315;
+  --muted: #5a5f67;
+  --line: #d5d6da;
+  --accent: #8f5b00;
+  --on-accent: #ffffff;
+  --soft: #faefd4;
+  --soft-ink: #6b4400;
+  --err: #b3261e;
+  --stop-bg: #fdecea;
+  --caution-bg: #fff1cc;
+  --caution-ink: #5c3a00;
+  --radius: 6px;
+  --radius-s: 4px;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #161615;
-    --card: #1f1f1d;
-    --border: #33332f;
-    --text: #ecece7;
-    --muted: #b0b0a8;
-    --accent: #7aa7ff;
-    --caution: #f0b860;
-    --caution-bg: #33290f;
-    --stop: #ff8f8f;
-    --stop-bg: #3a1a1a;
-    --shadow: rgba(0, 0, 0, 0.5);
+    --bg: #0a0b0d;
+    --card: #121417;
+    --field: #0c0d10;
+    --ink: #e9e7e2;
+    --muted: #8d9198;
+    --line: #272a30;
+    --accent: #f2b33d;
+    --on-accent: #17120a;
+    --soft: #221b0d;
+    --soft-ink: #f6cc7a;
+    --err: #ff8a7a;
+    --stop-bg: #2d1512;
+    --caution-bg: #2e2410;
+    --caution-ink: #ffd58a;
   }
 }
 
@@ -44,155 +56,250 @@
 
 html {
   font-size: 16px;
+  background: var(--bg);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.5;
+  color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
 }
 
 [hidden] {
   display: none !important;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.page-header,
-main,
-.page-footer,
+/* App shell: one column. On phones it fills the screen. */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--bg);
+}
+
 noscript {
-  max-width: 720px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 16px;
-  padding-right: 16px;
+  display: block;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
 }
 
-.page-header {
-  padding-top: 24px;
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px 20px 0;
+}
+
+.brand {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brand::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  background: var(--accent);
+}
+
+.count {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progress line */
+.progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 10px 20px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress li::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--line);
+}
+
+.progress li.done::before,
+.progress li.now::before {
+  background: var(--accent);
+}
+
+.progress button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 0 0;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.progress button:disabled {
+  cursor: default;
+}
+
+.progress li.now button {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.progress li.done button::before {
+  content: "\2713\00a0";
+  color: var(--accent);
+}
+
+.progress button:not(:disabled):hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* Screens */
+.screen {
+  flex: 1;
+  padding: 14px 20px 20px;
+}
+
+.screen.enter {
+  animation: screen-in 150ms ease-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
-  margin: 0 0 4px;
-  font-size: 28px;
-  line-height: 1.2;
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+h1:focus {
+  outline: none;
 }
 
 h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-  line-height: 1.3;
-}
-
-h3 {
-  margin: 20px 0 8px;
+  margin: 24px 0 8px;
   font-size: 16px;
 }
 
 .lead {
-  margin: 0 0 4px;
-}
-
-.version {
-  margin: 0 0 16px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-main {
-  padding-bottom: 16px;
-}
-
-.card {
-  margin: 0 0 16px;
-  padding: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-/* Step numbers come from a counter, so a hidden card does not leave a gap. */
-main {
-  counter-reset: step;
-}
-
-.step {
-  counter-increment: step;
-}
-
-.step > h2::before {
-  content: counter(step);
-  display: inline-block;
-  min-width: 28px;
-  height: 28px;
-  margin-right: 10px;
-  border-radius: 14px;
-  background: var(--accent);
-  color: var(--card);
-  font-size: 15px;
-  line-height: 28px;
-  text-align: center;
-  vertical-align: 1px;
-}
-
-.explain {
-  margin: 0 0 16px;
+  margin: 0 0 22px;
   color: var(--muted);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0 16px;
-}
-
-@media (min-width: 560px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.field {
-  margin: 0 0 16px;
-}
-
-label,
-legend {
+/* Labels: small, upper case, spaced */
+.label,
+legend.label {
   display: block;
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 8px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-input[type="text"],
-select {
+.block,
+.field {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.guard-question {
+  margin-top: 28px;
+}
+
+.hint-top {
+  margin: -2px 0 10px;
+}
+
+/* Text fields: numbers and the symbol use the number font */
+input[type="text"] {
   display: block;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
+  padding: 13px 14px;
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-family: var(--font-num);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="text"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
 }
 
 input[aria-invalid="true"] {
-  border-color: var(--stop);
+  border-color: var(--err);
+}
+
+input.symbol {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .prefixed {
@@ -202,142 +309,327 @@ input[aria-invalid="true"] {
 }
 
 .prefix {
+  font-family: var(--font-num);
+  font-size: 18px;
   font-weight: 600;
-}
-
-.hint {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 
 .tag {
   display: inline-block;
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   padding: 0 8px;
   background: var(--caution-bg);
-  color: var(--caution);
-  border-radius: 6px;
+  color: var(--caution-ink);
+  border-radius: var(--radius-s);
   font-size: 13px;
   font-weight: 600;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .symbol-caution {
-  margin: 4px 0 0;
-  padding: 6px 8px;
+  margin: 8px 0 0;
+  padding: 6px 10px;
   background: var(--caution-bg);
-  color: var(--caution);
-  border-radius: 6px;
+  color: var(--caution-ink);
+  border-radius: var(--radius-s);
   font-size: 14px;
   font-weight: 600;
 }
 
 .error {
-  margin: 4px 0 0;
-  color: var(--stop);
+  margin: 10px 0 0;
+  color: var(--err);
   font-size: 14px;
   font-weight: 600;
 }
 
-fieldset.toggle {
-  margin: 0 0 16px;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-
-.choices {
+/* Choices shown as chips */
+.chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.choice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  margin: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 400;
+.chips label {
+  position: relative;
   cursor: pointer;
 }
 
-.choice:has(input:checked) {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-input[type="radio"],
-input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+.chips input {
+  position: absolute;
+  inset: 0;
   margin: 0;
-  accent-color: var(--accent);
+  opacity: 0;
+  cursor: pointer;
 }
 
-.check {
+.chips span {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 0;
-  font-size: 16px;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 14px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-size: 15px;
+}
+
+.chips input:checked + span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
-.check input {
-  margin-top: 2px;
-  flex: none;
-}
-
-:focus-visible {
+.chips input:focus-visible + span {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-details.more {
-  margin: 0 0 8px;
+/* The check panel on the instrument screen */
+.check {
+  margin: 0 0 14px;
+  padding: 16px;
+  background: var(--soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
 }
 
-details > summary {
+.check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.check-kicker {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
-  padding: 10px 0;
+  margin: -8px 0;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-s);
+  color: var(--soft-ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.check-intro {
+  margin: 0 0 8px;
+  color: var(--soft-ink);
+  font-size: 14px;
+}
+
+.plain {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.plain li {
+  padding: 7px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.plain b {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The number fields: two columns, one column when a column would be
+   narrower than about 140px. */
+.edit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(140px, calc(50% - 6px)), 1fr));
+  gap: 0 12px;
+  margin: 0 0 4px;
+}
+
+.edit .label {
+  margin-bottom: 5px;
+}
+
+.edit input[type="text"] {
+  padding: 10px 12px;
+  font-size: 16px;
+}
+
+.edit .field {
+  margin-bottom: 16px;
+}
+
+/* Rows of one grid line up: label, input, hint, then tag and error. */
+@supports (grid-template-rows: subgrid) {
+  .edit .field {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
+  .edit .field > .label {
+    grid-row: 1;
+  }
+
+  .edit .field > input {
+    grid-row: 2;
+  }
+
+  .edit .field > .hint {
+    grid-row: 3;
+  }
+
+  .edit .field > .status {
+    grid-row: 4;
+  }
+}
+
+.check .label {
+  color: var(--soft-ink);
+}
+
+.check .hint {
+  color: var(--soft-ink);
+}
+
+.check-result {
+  margin: 4px 0 14px;
+}
+
+.check-line {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.check-line strong {
+  display: block;
+  margin: 4px 0 2px;
+  color: var(--soft-ink);
+  font-family: var(--font-num);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.check-sub {
+  margin: 6px 0 0;
+  color: var(--soft-ink);
+  font-size: 14px;
+}
+
+.tick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 13px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tick input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.tick:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.tick:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Help and notes */
+.more {
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+
+.more summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--accent);
   font-weight: 600;
   cursor: pointer;
 }
 
-details.guard > summary {
-  padding: 10px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
+.more p {
+  margin: 0 0 8px;
 }
 
-details.guard[open] > summary {
-  margin-bottom: 12px;
+.more ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
 }
 
-.note {
+.check .more {
   margin: 0 0 12px;
-  padding: 8px 12px;
-  background: var(--caution-bg);
-  color: var(--caution);
-  border-radius: 8px;
 }
 
-.help-box,
-.check-line,
-.lookup,
-.rate-line {
+.check .more summary {
+  color: var(--soft-ink);
+}
+
+.costs {
+  margin: 0 0 22px;
+}
+
+.costs summary {
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
+}
+
+.costs[open] summary {
+  margin-bottom: 14px;
+}
+
+.help-box {
   margin: 0 0 16px;
   padding: 12px;
   border: 1px solid var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius);
+}
+
+/* Notes, not fields: a line on the left, no box around them. */
+.lookup,
+.rate-line {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: var(--soft);
+  border: 0;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  color: var(--soft-ink);
 }
 
 .help-box p,
@@ -353,64 +645,46 @@ details.guard[open] > summary {
   font-weight: 600;
 }
 
-.check-line {
-  font-weight: 600;
-}
-
 .rate-line {
   font-weight: 600;
 }
 
-.confirm {
-  margin: 0 0 8px;
+.note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: var(--caution-bg);
+  color: var(--caution-ink);
+  border-radius: var(--radius-s);
 }
 
-/* Result card */
-
+/* Result */
 .result {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  max-width: 720px;
-  max-height: 55vh;
-  margin: 0 auto 16px;
-  padding: 16px;
-  overflow: auto;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 -4px 16px var(--shadow);
-}
-
-@media (min-width: 800px) {
-  .result {
-    position: static;
-    max-height: none;
-    overflow: visible;
-    box-shadow: none;
-  }
-}
-
-main > .result {
-  width: 100%;
+  margin: 0 0 22px;
 }
 
 .lots {
   margin: 0;
   color: var(--accent);
-  font-size: 40px;
+  font-family: var(--font-num);
+  font-size: clamp(32px, 14vw, 56px);
   font-weight: 700;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The number and the word each stay whole; the only break is between them. */
+.lots-number,
+.lots-unit {
+  white-space: nowrap;
 }
 
 .loss-line {
-  margin: 0 0 12px;
+  margin: 8px 0 16px;
   font-weight: 600;
 }
 
 .waiting {
-  margin: 0;
+  margin: 0 0 12px;
   color: var(--muted);
 }
 
@@ -418,18 +692,19 @@ main > .result {
   margin: 0 0 12px;
   padding: 12px;
   background: var(--stop-bg);
-  color: var(--stop);
-  border-radius: 8px;
+  border: 1px solid var(--err);
+  border-radius: var(--radius);
+  color: var(--err);
   font-weight: 600;
-}
-
-noscript .stop-box {
-  margin-top: 16px;
 }
 
 .block-title {
   margin: 16px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 table.figures {
@@ -441,22 +716,29 @@ table.figures {
 
 table.figures th,
 table.figures td {
-  padding: 6px 0;
-  border-top: 1px solid var(--border);
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
 }
 
 table.figures th {
-  width: 55%;
+  width: 50%;
   padding-right: 12px;
-  font-weight: 400;
   color: var(--muted);
+  font-weight: 400;
 }
 
 table.figures td {
+  font-family: var(--font-num);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+.explain {
+  margin: 0 0 12px;
+  color: var(--muted);
 }
 
 ul.cautions {
@@ -469,8 +751,8 @@ ul.cautions li {
   margin: 0 0 6px;
   padding: 8px 12px;
   background: var(--caution-bg);
-  color: var(--caution);
-  border-radius: 8px;
+  color: var(--caution-ink);
+  border-radius: var(--radius-s);
   font-size: 15px;
   font-weight: 600;
 }
@@ -481,32 +763,163 @@ ul.cautions li {
   font-size: 14px;
 }
 
-.memory .plain-title {
-  font-size: 16px;
+.memory {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
-button {
+.memory .plain-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.memory label.remember {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-height: 44px;
-  margin-top: 12px;
-  padding: 8px 16px;
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 
-button:disabled {
+.memory input[type="checkbox"] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.saved-note {
+  margin: 0 0 8px;
+  padding-top: 8px;
+}
+
+.saved-note p {
+  margin: 0;
+}
+
+.plain-button {
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plain-button:disabled {
+  color: var(--muted);
   cursor: not-allowed;
-  opacity: 0.6;
+}
+
+noscript .stop-box {
+  margin-top: 8px;
+}
+
+/* Back and Next: sticky at the bottom of the screen on phones */
+.nav {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.btn {
+  min-height: 44px;
+  padding: 12px 20px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.btn.primary {
+  flex: 1;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .page-footer {
-  padding-bottom: 32px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 20px 32px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.page-footer p {
+  margin: 0 0 6px;
+}
+
+/* Small phones: the progress labels shrink and size themselves to their text */
+@media (max-width: 379px) {
+  .progress {
+    grid-template-columns: repeat(4, auto);
+    justify-content: space-between;
+  }
+
+  .progress button {
+    width: auto;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+}
+
+/* Wide screens: the app is a centred card with the bar inside it */
+@media (min-width: 700px) {
+  body {
+    padding: 40px 24px 24px;
+  }
+
+  .app {
+    min-height: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .top {
+    padding: 26px 36px 0;
+  }
+
+  .progress {
+    margin: 10px 36px 0;
+  }
+
+  .screen {
+    padding: 20px 36px 28px;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  .nav {
+    position: static;
+    justify-content: space-between;
+    padding: 18px 36px 24px;
+    background: var(--card);
+  }
+
+  .btn.primary {
+    flex: 0 0 auto;
+    min-width: 180px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -519,342 +932,365 @@ button:disabled {
 </style>
 </head>
 <body>
-<header class="page-header">
-  <h1>Lotcheck</h1>
-  <p class="lead">Work out your position size before you trade. Runs on your device. Nothing is sent anywhere.</p>
-  <p class="version">Version 0.1.0</p>
-</header>
 <noscript><p class="stop-box">Lotcheck needs JavaScript to work. It still sends nothing anywhere.</p></noscript>
+<div class="app" id="app">
+<header class="top">
+  <span class="brand">Lotcheck</span>
+  <span class="count" id="step-count">Step 1 of 4</span>
+</header>
+<ol class="progress" id="progress" aria-label="Steps">
+  <li><button type="button" data-go="account">Account</button></li>
+  <li><button type="button" data-go="instrument">Instrument</button></li>
+  <li><button type="button" data-go="trade">Trade</button></li>
+  <li><button type="button" data-go="result">Result</button></li>
+</ol>
 <main id="main">
 
-<section class="card step" id="card-account" aria-labelledby="t-account">
-  <h2 id="t-account">Your account</h2>
-  <p class="explain">Tell Lotcheck how much money is in the account and how much you accept to lose on one trade.</p>
-  <div class="grid">
-<div class="field" id="w-accountCurrency">
-  <label for="f-accountCurrency" id="l-accountCurrency">Account currency</label>
-  <input id="f-accountCurrency" data-key="accountCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-accountCurrency e-accountCurrency" maxlength="5">
-  <p class="hint" id="h-accountCurrency">The currency of your account balance, for example EUR. 3 letters.</p>
-  <p class="error" id="e-accountCurrency" role="alert" hidden></p>
-</div>
-<div class="field" id="w-balance">
-  <label for="f-balance" id="l-balance">Account balance</label>
-  <input id="f-balance" data-key="balance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-balance e-balance">
-  <p class="hint" id="h-balance">How much money is in the account. Use a dot for decimals, no thousands separators.</p>
-  <p class="error" id="e-balance" role="alert" hidden></p>
-</div>
+<section class="screen" id="account" aria-labelledby="t-account">
+  <h1 id="t-account" tabindex="-1">Your account</h1>
+  <p class="lead">Work out your position size before you trade. Runs on your device. Nothing is sent anywhere.</p>
+  <div class="field" id="w-accountCurrency">
+    <label for="f-accountCurrency" id="l-accountCurrency" class="label">Account currency</label>
+    <input id="f-accountCurrency" data-key="accountCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-accountCurrency e-accountCurrency" maxlength="5">
+    <p class="hint" id="h-accountCurrency">The currency of your account balance, for example EUR. 3 letters.</p>
+    <p class="error" id="e-accountCurrency" role="alert" hidden></p>
   </div>
-<fieldset class="toggle" id="fs-riskMode">
-  <legend>Risk per trade</legend>
-  <div class="choices">
-    <label class="choice" for="risk-percent"><input type="radio" id="risk-percent" name="riskMode" value="percent" data-key="riskMode"> <span id="risk-percent-text">Percent of balance</span></label>
-    <label class="choice" for="risk-amount"><input type="radio" id="risk-amount" name="riskMode" value="amount" data-key="riskMode"> <span id="risk-amount-text">Fixed amount</span></label>
+  <div class="field" id="w-balance">
+    <label for="f-balance" id="l-balance" class="label">Account balance</label>
+    <input id="f-balance" data-key="balance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-balance e-balance">
+    <p class="hint" id="h-balance">How much money is in the account. Use a dot for decimals, no thousands separators.</p>
+    <p class="error" id="e-balance" role="alert" hidden></p>
   </div>
-</fieldset>
-  <div class="grid">
-<div class="field" id="w-riskValue">
-  <label for="f-riskValue" id="l-riskValue">Risk per trade (percent of balance)</label>
-  <input id="f-riskValue" data-key="riskValue" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-riskValue e-riskValue">
-  <p class="hint" id="h-riskValue">The most you accept to lose on this trade if your stop-loss is hit. The 1 is only an example. Enter your own number.</p>
-  <p class="error" id="e-riskValue" role="alert" hidden></p>
-</div>
+  <fieldset class="block" id="fs-riskMode">
+    <legend class="label">Risk per trade</legend>
+    <div class="chips">
+      <label for="risk-percent"><input type="radio" id="risk-percent" name="riskMode" value="percent" data-key="riskMode"><span id="risk-percent-text">Percent of balance</span></label>
+      <label for="risk-amount"><input type="radio" id="risk-amount" name="riskMode" value="amount" data-key="riskMode"><span id="risk-amount-text">Fixed amount</span></label>
+    </div>
+  </fieldset>
+  <div class="field" id="w-riskValue">
+    <label for="f-riskValue" id="l-riskValue" class="label">Risk per trade (percent of balance)</label>
+    <input id="f-riskValue" data-key="riskValue" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-riskValue e-riskValue">
+    <p class="hint" id="h-riskValue">The most you accept to lose on this trade if your stop-loss is hit. The 1 is only an example. Enter your own number.</p>
+    <p class="error" id="e-riskValue" role="alert" hidden></p>
   </div>
+  <div class="saved-note" id="saved-note" hidden>
+    <p>Inputs saved in this browser were filled in.</p>
+    <button type="button" class="plain-button" id="b-forget-account">Forget saved inputs</button>
+  </div>
+  <p class="hint" id="forget-status-account" role="status"></p>
   <details class="more">
     <summary>What is this?</summary>
     <p>Risk per trade is the money you accept to lose if the price reaches your stop-loss. Lotcheck turns it into a lot size. Use percent to risk a share of your balance each time, or a fixed amount if you prefer a set sum.</p>
   </details>
 </section>
 
-<section class="card step" id="card-instrument" aria-labelledby="t-instrument">
-  <h2 id="t-instrument">What you trade</h2>
-  <p class="explain">Pick the kind of instrument, then enter its numbers. These numbers decide how much one lot is worth.</p>
-  <div class="field" id="w-instrumentType">
-    <label for="f-instrumentType">Instrument type</label>
-    <select id="f-instrumentType" data-key="instrumentType" aria-describedby="h-instrumentType">
-      <option value="forex">Forex pair</option>
-      <option value="index">Index</option>
-      <option value="metal">Metal or commodity</option>
-      <option value="crypto">Crypto</option>
-    </select>
-    <p class="hint" id="h-instrumentType">This only changes the help and the checks shown below.</p>
+<section class="screen" id="instrument" aria-labelledby="t-instrument" hidden>
+  <h1 id="t-instrument" tabindex="-1">What you trade</h1>
+  <p class="lead">Pick what you want to trade.</p>
+  <fieldset class="block" id="fs-instrumentType">
+    <legend class="label">Instrument type</legend>
+    <div class="chips">
+      <label for="type-forex"><input type="radio" id="type-forex" name="instrumentType" value="forex" data-key="instrumentType"><span id="type-forex-text">Forex pair</span></label>
+      <label for="type-index"><input type="radio" id="type-index" name="instrumentType" value="index" data-key="instrumentType"><span id="type-index-text">Index</span></label>
+      <label for="type-metal"><input type="radio" id="type-metal" name="instrumentType" value="metal" data-key="instrumentType"><span id="type-metal-text">Metal or commodity</span></label>
+      <label for="type-crypto"><input type="radio" id="type-crypto" name="instrumentType" value="crypto" data-key="instrumentType"><span id="type-crypto-text">Crypto</span></label>
+    </div>
+    </fieldset>
+  <div class="field block" id="w-symbol">
+    <label for="f-symbol" id="l-symbol" class="label">Symbol</label>
+    <input id="f-symbol" class="symbol" data-key="symbol" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-symbol c-symbol e-symbol" maxlength="20">
+    <p class="hint" id="h-symbol">For a forex pair, a 6-letter symbol such as EURUSD fills in typical values below.</p>
+    <p class="symbol-caution" id="c-symbol" hidden></p>
+    <p class="error" id="e-symbol" role="alert" hidden></p>
   </div>
-  <div class="grid">
-<div class="field" id="w-symbol">
-  <label for="f-symbol" id="l-symbol">Symbol (a name for you)</label>
-  <input id="f-symbol" data-key="symbol" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-symbol c-symbol e-symbol" maxlength="20">
-  <p class="hint" id="h-symbol">For a forex pair, a 6-letter symbol such as EURUSD fills in typical values below.</p>
-  <p class="symbol-caution" id="c-symbol" hidden></p>
-  <p class="error" id="e-symbol" role="alert" hidden></p>
-</div>
-<div class="field" id="w-baseCurrency">
-  <label for="f-baseCurrency" id="l-baseCurrency">Base currency</label>
-  <input id="f-baseCurrency" data-key="baseCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-baseCurrency t-baseCurrency e-baseCurrency" maxlength="5">
-  <p class="hint" id="h-baseCurrency">The first currency of the pair. For EURUSD it is EUR.</p>
-  <p class="tag" id="t-baseCurrency" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-baseCurrency" role="alert" hidden></p>
-</div>
-<div class="field" id="w-quoteCurrency">
-  <label for="f-quoteCurrency" id="l-quoteCurrency">Quote currency</label>
-  <input id="f-quoteCurrency" data-key="quoteCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-quoteCurrency t-quoteCurrency e-quoteCurrency" maxlength="5">
-  <p class="hint" id="h-quoteCurrency">The currency profit and loss is counted in. For EURUSD it is USD.</p>
-  <p class="tag" id="t-quoteCurrency" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-quoteCurrency" role="alert" hidden></p>
-</div>
-<div class="field" id="w-contractSize">
-  <label for="f-contractSize" id="l-contractSize">Contract size</label>
-  <input id="f-contractSize" data-key="contractSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-contractSize t-contractSize e-contractSize">
-  <p class="hint" id="h-contractSize">How many units are in 1.00 lot.</p>
-  <p class="tag" id="t-contractSize" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-contractSize" role="alert" hidden></p>
-</div>
-<div class="field" id="w-pipSize">
-  <label for="f-pipSize" id="l-pipSize">Pip or point size</label>
-  <input id="f-pipSize" data-key="pipSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-pipSize t-pipSize e-pipSize">
-  <p class="hint" id="h-pipSize">The price move you call one pip or point, for example 0.0001.</p>
-  <p class="tag" id="t-pipSize" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-pipSize" role="alert" hidden></p>
-</div>
-<div class="field" id="w-minLot">
-  <label for="f-minLot" id="l-minLot">Minimum lot</label>
-  <input id="f-minLot" data-key="minLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-minLot t-minLot e-minLot">
-  <p class="hint" id="h-minLot">The smallest size your broker allows.</p>
-  <p class="tag" id="t-minLot" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-minLot" role="alert" hidden></p>
-</div>
-<div class="field" id="w-lotStep">
-  <label for="f-lotStep" id="l-lotStep">Lot step</label>
-  <input id="f-lotStep" data-key="lotStep" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-lotStep t-lotStep e-lotStep">
-  <p class="hint" id="h-lotStep">Sizes must be a multiple of this.</p>
-  <p class="tag" id="t-lotStep" hidden>typical value, check with your broker</p>
-  <p class="error" id="e-lotStep" role="alert" hidden></p>
-</div>
-<div class="field" id="w-maxLot">
-  <label for="f-maxLot" id="l-maxLot">Maximum lot (optional)</label>
-  <input id="f-maxLot" data-key="maxLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-maxLot e-maxLot">
-  <p class="hint" id="h-maxLot">Leave empty if there is no limit.</p>
-  <p class="error" id="e-maxLot" role="alert" hidden></p>
-</div>
-  </div>
-  <div class="help-box" id="nonforex-help" hidden>
-    <p class="help-title">Where to find these numbers</p>
-    <p>Nothing is filled in for this type, because the values differ between brokers. Open the symbol information window of your trading platform (often called symbol specification or contract specification) and copy the numbers.</p>
-    <ul>
-      <li>Quote currency: the currency profit and loss is paid in, often called profit currency.</li>
-      <li>Contract size: the number of units in 1.00 lot.</li>
-      <li>Pip or point size: the price move you want to count as one step. Often the tick size or point size shown there.</li>
-      <li>Minimum lot, lot step and maximum lot: listed as minimum volume, volume step and maximum volume.</li>
-    </ul>
-  </div>
+  <section class="check" id="check-panel" aria-labelledby="check-kicker">
+    <div class="check-head">
+      <p class="check-kicker" id="check-kicker">Check this first</p>
+      <button type="button" class="link" id="b-numbers" aria-controls="numbers-edit" aria-expanded="false">Change numbers</button>
+    </div>
+    <p class="check-intro" id="numbers-intro"></p>
+    <ul class="plain" id="numbers-plain"></ul>
+    <div id="numbers-edit" hidden>
+      <details class="more" id="nonforex-help" hidden>
+        <summary>Where to find these numbers</summary>
+        <p>Nothing is filled in for this type, because the values differ between brokers. Open the symbol information window of your trading platform (often called symbol specification or contract specification) and copy the numbers.</p>
+        <ul>
+          <li>Quote currency: the currency profit and loss is paid in, often called profit currency.</li>
+          <li>Contract size: the number of units in 1.00 lot.</li>
+          <li>Pip or point size: the price move you want to count as one step. Often the tick size or point size shown there.</li>
+          <li>Minimum lot, lot step and maximum lot: listed as minimum volume, volume step and maximum volume.</li>
+        </ul>
+      </details>
+      <div class="edit">
+        <div class="field" id="w-baseCurrency">
+          <label for="f-baseCurrency" id="l-baseCurrency" class="label">Base currency</label>
+          <input id="f-baseCurrency" data-key="baseCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-baseCurrency t-baseCurrency e-baseCurrency" maxlength="5">
+          <p class="hint" id="h-baseCurrency">The first currency of the pair. For EURUSD it is EUR.</p>
+          <div class="status"><p class="tag" id="t-baseCurrency" hidden>typical value, check with your broker</p><p class="error" id="e-baseCurrency" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-quoteCurrency">
+          <label for="f-quoteCurrency" id="l-quoteCurrency" class="label">Quote currency</label>
+          <input id="f-quoteCurrency" data-key="quoteCurrency" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-quoteCurrency t-quoteCurrency e-quoteCurrency" maxlength="5">
+          <p class="hint" id="h-quoteCurrency">The currency profit and loss is counted in. For EURUSD it is USD.</p>
+          <div class="status"><p class="tag" id="t-quoteCurrency" hidden>typical value, check with your broker</p><p class="error" id="e-quoteCurrency" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-contractSize">
+          <label for="f-contractSize" id="l-contractSize" class="label">Contract size</label>
+          <input id="f-contractSize" data-key="contractSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-contractSize t-contractSize e-contractSize">
+          <p class="hint" id="h-contractSize">How many units are in 1.00 lot.</p>
+          <div class="status"><p class="tag" id="t-contractSize" hidden>typical value, check with your broker</p><p class="error" id="e-contractSize" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-pipSize">
+          <label for="f-pipSize" id="l-pipSize" class="label">Pip or point size</label>
+          <input id="f-pipSize" data-key="pipSize" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-pipSize t-pipSize e-pipSize">
+          <p class="hint" id="h-pipSize">The price move you call one pip or point, for example 0.0001.</p>
+          <div class="status"><p class="tag" id="t-pipSize" hidden>typical value, check with your broker</p><p class="error" id="e-pipSize" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-minLot">
+          <label for="f-minLot" id="l-minLot" class="label">Minimum lot</label>
+          <input id="f-minLot" data-key="minLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-minLot t-minLot e-minLot">
+          <p class="hint" id="h-minLot">The smallest size your broker allows.</p>
+          <div class="status"><p class="tag" id="t-minLot" hidden>typical value, check with your broker</p><p class="error" id="e-minLot" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-lotStep">
+          <label for="f-lotStep" id="l-lotStep" class="label">Lot step</label>
+          <input id="f-lotStep" data-key="lotStep" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-lotStep t-lotStep e-lotStep">
+          <p class="hint" id="h-lotStep">Sizes must be a multiple of this.</p>
+          <div class="status"><p class="tag" id="t-lotStep" hidden>typical value, check with your broker</p><p class="error" id="e-lotStep" role="alert" hidden></p></div>
+        </div>
+        <div class="field" id="w-maxLot">
+          <label for="f-maxLot" id="l-maxLot" class="label">Maximum lot (optional)</label>
+          <input id="f-maxLot" data-key="maxLot" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-maxLot e-maxLot">
+          <p class="hint" id="h-maxLot">Leave empty if there is no limit.</p>
+          <div class="status"><p class="error" id="e-maxLot" role="alert" hidden></p></div>
+        </div>
+      </div>
+    </div>
+    <div class="check-result" id="check-line" aria-live="polite" hidden>
+      <p class="check-line"><span id="check-lead"></span> <strong id="check-value"></strong></p>
+      <p class="check-sub" id="check-tail"></p>
+    </div>
+    <div class="confirm" id="confirm-wrap">
+      <label class="tick" for="f-checked"><input type="checkbox" id="f-checked" data-key="checked" aria-describedby="h-checked e-checked"> <span>I have checked these numbers in my platform</span></label>
+      <p class="hint" id="h-checked">Required before any lot size is shown. Changing the account currency or any instrument field unticks it.</p>
+      <p class="error" id="e-checked" role="alert" hidden></p>
+    </div>
+  </section>
   <details class="more" id="forex-help">
     <summary>What is this?</summary>
     <p>A lot is a fixed number of units. The contract size says how many. The pip size is the small price step you count in. The minimum lot and the lot step are the smallest size and the smallest change in size your broker allows. Typical values are filled in for a forex pair, but brokers differ, so check them in your platform.</p>
   </details>
-  <div class="check-line" id="check-line" hidden aria-live="polite"></div>
-  <div class="confirm" id="confirm-wrap">
-    <label class="check" for="f-checked"><input type="checkbox" id="f-checked" data-key="checked" aria-describedby="h-checked"> <span>I have checked these numbers in my platform</span></label>
-    <p class="hint" id="h-checked">Required before any lot size is shown. Changing the account currency or a field in this card unticks it.</p>
-  </div>
-</section>
-
-<section class="card step" id="card-conversion" aria-labelledby="t-conversion" hidden>
-  <h2 id="t-conversion">Currency conversion</h2>
-  <p class="explain" id="conversion-explain">Your account and this instrument use different currencies, so Lotcheck needs one exchange rate.</p>
   <p class="lookup" id="conversion-instrument" hidden>Your account currency is the first currency of this pair, so Lotcheck converts the loss at your stop-loss price. No extra price is needed.</p>
   <p class="lookup" id="conversion-instrument-other" hidden>Your account currency is what this instrument is priced from, so Lotcheck converts the loss at your stop-loss price. No extra price is needed.</p>
-  <div id="conversion-inputs">
+</section>
+
+<section class="screen" id="conversion" aria-labelledby="t-conversion" hidden>
+  <h1 id="t-conversion" tabindex="-1">Currency conversion</h1>
+  <p class="lead" id="conversion-explain">Your account and this instrument use different currencies, so Lotcheck needs one exchange rate.</p>
   <p class="lookup" id="conversion-lookup"></p>
-  <p class="lookup" id="conversion-pair-warning" hidden>If the instrument you trade is this same pair, enter its base currency in step 2 instead. Otherwise the loss is under-stated.</p>
-<fieldset class="toggle" id="fs-convPair">
-  <legend>Which price are you entering?</legend>
-  <div class="choices">
-    <label class="choice" for="conv-aq"><input type="radio" id="conv-aq" name="convPair" value="account-quote" data-key="convPair"> <span id="conv-aq-text">Pair 1</span></label>
-    <label class="choice" for="conv-qa"><input type="radio" id="conv-qa" name="convPair" value="quote-account" data-key="convPair"> <span id="conv-qa-text">Pair 2</span></label>
-  </div>
-</fieldset>
-  <div class="grid">
-<div class="field" id="w-convPrice">
-  <label for="f-convPrice" id="l-convPrice">Price</label>
-  <input id="f-convPrice" data-key="convPrice" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-convPrice e-convPrice">
-  <p class="hint" id="h-convPrice">The current price of the pair you picked, as your platform shows it.</p>
-  <p class="error" id="e-convPrice" role="alert" hidden></p>
-</div>
+  <p class="lookup" id="conversion-pair-warning">If the instrument you trade is this same pair, enter its base currency on the Instrument step instead. Otherwise the loss is under-stated.</p>
+  <fieldset class="block" id="fs-convPair">
+    <legend class="label">Which price are you entering?</legend>
+    <div class="chips">
+      <label for="conv-aq"><input type="radio" id="conv-aq" name="convPair" value="account-quote" data-key="convPair"><span id="conv-aq-text">Pair 1</span></label>
+      <label for="conv-qa"><input type="radio" id="conv-qa" name="convPair" value="quote-account" data-key="convPair"><span id="conv-qa-text">Pair 2</span></label>
+    </div>
+    <p class="error" id="e-convPair" role="alert" hidden></p>
+    </fieldset>
+  <div class="field" id="w-convPrice">
+    <label for="f-convPrice" id="l-convPrice" class="label">Price</label>
+    <input id="f-convPrice" data-key="convPrice" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-convPrice e-convPrice">
+    <p class="hint" id="h-convPrice">The current price of the pair you picked, as your platform shows it.</p>
+    <p class="error" id="e-convPrice" role="alert" hidden></p>
   </div>
   <p class="rate-line" id="rate-line" hidden></p>
-  </div>
   <details class="more">
     <summary>What is this?</summary>
     <p>If the instrument is paid in a different currency than your account, the loss has to be converted. Look up the current price of the currency pair in your platform. The sentence under the price shows what Lotcheck understood. Check that it points the right way.</p>
   </details>
 </section>
 
-<section class="card step" id="card-trade" aria-labelledby="t-trade">
-  <h2 id="t-trade">Your trade</h2>
-  <p class="explain">Enter the price you plan to enter at and the price of your stop-loss.</p>
-  <div class="grid">
-<div class="field" id="w-entry">
-  <label for="f-entry" id="l-entry">Entry price</label>
-  <input id="f-entry" data-key="entry" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-entry e-entry">
-  <p class="hint" id="h-entry">The price you plan to open the trade at.</p>
-  <p class="error" id="e-entry" role="alert" hidden></p>
-</div>
-<div class="field" id="w-stop">
-  <label for="f-stop" id="l-stop">Stop-loss price</label>
-  <input id="f-stop" data-key="stop" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-stop e-stop">
-  <p class="hint" id="h-stop">The price where the trade closes at a loss. It must differ from the entry.</p>
-  <p class="error" id="e-stop" role="alert" hidden></p>
-</div>
-<div class="field" id="w-extraDistance">
-  <label for="f-extraDistance" id="l-extraDistance">Extra distance for spread or slippage (optional)</label>
-  <input id="f-extraDistance" data-key="extraDistance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-extraDistance e-extraDistance">
-  <p class="hint" id="h-extraDistance">In the same price units as your entry and stop, for example 0.0002 for EURUSD. It is added to the stop distance.</p>
-  <p class="error" id="e-extraDistance" role="alert" hidden></p>
-</div>
-<div class="field" id="w-commission">
-  <label for="f-commission" id="l-commission">Commission per 1.00 lot, round trip (optional)</label>
-  <input id="f-commission" data-key="commission" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-commission e-commission">
-  <p class="hint" id="h-commission">In your account currency. Leave empty if there is none.</p>
-  <p class="error" id="e-commission" role="alert" hidden></p>
-</div>
-<div class="field" id="w-leverage">
-  <label for="f-leverage" id="l-leverage">Leverage (optional)</label>
-  <div class="prefixed"><span class="prefix" aria-hidden="true">1:</span><input id="f-leverage" data-key="leverage" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-leverage e-leverage"></div>
-  <p class="hint" id="h-leverage">For example 30 for 1:30. Only used to show the margin needed.</p>
-  <p class="error" id="e-leverage" role="alert" hidden></p>
-</div>
+<section class="screen" id="trade" aria-labelledby="t-trade" hidden>
+  <h1 id="t-trade" tabindex="-1">Your trade</h1>
+  <p class="lead">Enter the price you plan to enter at and the price of your stop-loss.</p>
+  <div class="field" id="w-entry">
+    <label for="f-entry" id="l-entry" class="label">Entry price</label>
+    <input id="f-entry" data-key="entry" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-entry e-entry">
+    <p class="hint" id="h-entry">The price you plan to open the trade at.</p>
+    <p class="error" id="e-entry" role="alert" hidden></p>
   </div>
+  <div class="field" id="w-stop">
+    <label for="f-stop" id="l-stop" class="label">Stop-loss price</label>
+    <input id="f-stop" data-key="stop" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-stop e-stop">
+    <p class="hint" id="h-stop">The price where the trade closes at a loss. It must differ from the entry.</p>
+    <p class="error" id="e-stop" role="alert" hidden></p>
+  </div>
+  <details class="more costs" id="costs">
+    <summary>Add costs</summary>
+    <div class="field" id="w-extraDistance">
+      <label for="f-extraDistance" id="l-extraDistance" class="label">Extra distance for spread or slippage (optional)</label>
+      <input id="f-extraDistance" data-key="extraDistance" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-extraDistance e-extraDistance">
+      <p class="hint" id="h-extraDistance">In the same price units as your entry and stop, for example 0.0002 for EURUSD. It is added to the stop distance.</p>
+      <p class="error" id="e-extraDistance" role="alert" hidden></p>
+    </div>
+    <div class="field" id="w-commission">
+      <label for="f-commission" id="l-commission" class="label">Commission per 1.00 lot, round trip (optional)</label>
+      <input id="f-commission" data-key="commission" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-commission e-commission">
+      <p class="hint" id="h-commission">In your account currency. Leave empty if there is none.</p>
+      <p class="error" id="e-commission" role="alert" hidden></p>
+    </div>
+    <div class="field" id="w-leverage">
+      <label for="f-leverage" id="l-leverage" class="label">Leverage (optional)</label>
+      <div class="prefixed"><span class="prefix" aria-hidden="true">1:</span><input id="f-leverage" data-key="leverage" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-leverage e-leverage"></div>
+      <p class="hint" id="h-leverage">For example 30 for 1:30. Only used to show the margin needed.</p>
+      <p class="error" id="e-leverage" role="alert" hidden></p>
+    </div>
+  </details>
+  <fieldset class="block guard-question" id="fs-guardOpen" aria-describedby="h-guardOpen">
+    <legend class="label">Does your account have loss limits?</legend>
+    <p class="hint hint-top" id="h-guardOpen">For example a prop-firm challenge.</p>
+    <div class="chips">
+      <label for="guard-no"><input type="radio" id="guard-no" name="guardOpen" value="false" data-key="guardOpen"><span id="guard-no-text">No</span></label>
+      <label for="guard-yes"><input type="radio" id="guard-yes" name="guardOpen" value="true" data-key="guardOpen"><span id="guard-yes-text">Yes</span></label>
+    </div>
+    </fieldset>
   <details class="more">
     <summary>What is this?</summary>
     <p>The stop-loss decides how far the price may move against you. Lotcheck works out the size so that this move costs about your chosen risk. If the stop is below the entry it is a buy, if it is above the entry it is a sell. Spread, slippage and commission make the real loss bigger, so enter them if you know them.</p>
   </details>
 </section>
 
-<section class="card step" id="card-guard" aria-labelledby="t-guard">
-  <h2 id="t-guard">Account loss limits (optional)</h2>
-  <p class="explain" id="guard-status">Not applied: no limit entered yet.</p>
-  <details id="guard" class="guard">
-    <summary>I trade an account with loss limits (for example a prop-firm challenge)</summary>
-    <p class="note">Rules differ between firms and change. Take every number from your own firm's current rules. Lotcheck ships no firm presets.</p>
-    <div class="help-box" id="firm-questions">
-      <p class="help-title">Answer these from your firm's rules first</p>
-      <ul>
-        <li>Is the daily limit a percent of the starting balance or of the day-start value?</li>
-        <li>Is the day-start value the balance or the equity, and at what time does the day reset?</li>
-        <li>Is the total limit fixed (often called max drawdown) or trailing (trailing drawdown)?</li>
-        <li>Does a trailing floor follow balance or equity, and does it stop rising at some point?</li>
-      </ul>
-    </div>
-    <div class="grid">
-<div class="field" id="w-equity">
-  <label for="f-equity" id="l-equity">Current equity</label>
-  <input id="f-equity" data-key="equity" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-equity e-equity">
-  <p class="hint" id="h-equity">Balance plus the floating profit or loss of your open trades, right now.</p>
-  <p class="error" id="e-equity" role="alert" hidden></p>
-</div>
-    </div>
-    <h3>Daily loss limit</h3>
-    <div class="grid">
-<div class="field" id="w-dailyPercent">
-  <label for="f-dailyPercent" id="l-dailyPercent">Daily limit (percent)</label>
-  <input id="f-dailyPercent" data-key="dailyPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyPercent e-dailyPercent">
-  <p class="hint" id="h-dailyPercent">Often called max daily loss. Check whether your firm counts balance or equity.</p>
-  <p class="error" id="e-dailyPercent" role="alert" hidden></p>
-</div>
-<div class="field" id="w-dailyOf">
-  <label for="f-dailyOf" id="l-dailyOf">Daily limit: percent of this amount</label>
-  <input id="f-dailyOf" data-key="dailyOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyOf e-dailyOf">
-  <p class="hint" id="h-dailyOf">The amount your firm takes the percent of, often the starting balance.</p>
-  <p class="error" id="e-dailyOf" role="alert" hidden></p>
-</div>
-<div class="field" id="w-dailyStart">
-  <label for="f-dailyStart" id="l-dailyStart">Value at the start of the trading day</label>
-  <input id="f-dailyStart" data-key="dailyStart" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyStart e-dailyStart">
-  <p class="hint" id="h-dailyStart">Check when your firm's day resets and what value it uses.</p>
-  <p class="error" id="e-dailyStart" role="alert" hidden></p>
-</div>
-    </div>
-    <h3>Total loss limit</h3>
-<fieldset class="toggle" id="fs-totalType" aria-describedby="h-totalType">
-  <legend>Type of total limit</legend>
-  <p class="hint" id="h-totalType">Firms often call these max drawdown (fixed) and trailing drawdown. The floor is the account value you must stay above.</p>
-  <div class="choices">
-    <label class="choice" for="total-static"><input type="radio" id="total-static" name="totalType" value="static" data-key="totalType"> <span id="total-static-text">Fixed floor</span></label>
-    <label class="choice" for="total-trailing"><input type="radio" id="total-trailing" name="totalType" value="trailing" data-key="totalType"> <span id="total-trailing-text">Trailing floor</span></label>
+<section class="screen" id="limits" aria-labelledby="t-limits" hidden>
+  <h1 id="t-limits" tabindex="-1">Loss limits</h1>
+  <p class="lead" id="guard-status">Not applied: you answered No.</p>
+  <p class="error" id="e-guard" role="alert" hidden></p>
+  <p class="note">Rules differ between firms and change. Take every number from your own firm's current rules. Lotcheck ships no firm presets.</p>
+  <div class="help-box" id="firm-questions">
+    <p class="help-title">Answer these from your firm's rules first</p>
+    <ul>
+      <li>Is the daily limit a percent of the starting balance or of the day-start value?</li>
+      <li>Is the day-start value the balance or the equity, and at what time does the day reset?</li>
+      <li>Is the total limit fixed (often called max drawdown) or trailing (trailing drawdown)?</li>
+      <li>Does a trailing floor follow balance or equity, and does it stop rising at some point?</li>
+    </ul>
   </div>
-</fieldset>
-    <p class="explain" id="trailing-note" hidden>This room assumes the floor does not move while the trade is open. If your firm's floor follows equity, profit made before the stop raises the floor, and the stop can then break the limit.</p>
-    <div class="grid">
-<div class="field" id="w-totalPercent">
-  <label for="f-totalPercent" id="l-totalPercent">Total limit (percent)</label>
-  <input id="f-totalPercent" data-key="totalPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalPercent e-totalPercent">
-  <p class="hint" id="h-totalPercent">The most your firm lets the account fall in total.</p>
-  <p class="error" id="e-totalPercent" role="alert" hidden></p>
-</div>
-<div class="field" id="w-totalInitial">
-  <label for="f-totalInitial" id="l-totalInitial">Starting balance of the account</label>
-  <input id="f-totalInitial" data-key="totalInitial" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalInitial e-totalInitial">
-  <p class="hint" id="h-totalInitial">The starting balance the fixed floor is measured from.</p>
-  <p class="error" id="e-totalInitial" role="alert" hidden></p>
-</div>
-<div class="field" id="w-totalOf" hidden>
-  <label for="f-totalOf" id="l-totalOf">Total limit: percent of this amount</label>
-  <input id="f-totalOf" data-key="totalOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalOf e-totalOf">
-  <p class="hint" id="h-totalOf">The amount a trailing limit takes the percent of.</p>
-  <p class="error" id="e-totalOf" role="alert" hidden></p>
-</div>
-<div class="field" id="w-totalHigh" hidden>
-  <label for="f-totalHigh" id="l-totalHigh">Highest value reached</label>
-  <input id="f-totalHigh" data-key="totalHigh" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalHigh e-totalHigh">
-  <p class="hint" id="h-totalHigh">The high-water mark your firm uses. Check if it counts balance or equity.</p>
-  <p class="error" id="e-totalHigh" role="alert" hidden></p>
-</div>
-<div class="field" id="w-totalFloorCap" hidden>
-  <label for="f-totalFloorCap" id="l-totalFloorCap">Floor stops rising at (optional)</label>
-  <input id="f-totalFloorCap" data-key="totalFloorCap" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalFloorCap e-totalFloorCap">
-  <p class="hint" id="h-totalFloorCap">If your firm stops the floor from rising above a value, enter it here.</p>
-  <p class="error" id="e-totalFloorCap" role="alert" hidden></p>
-</div>
+  <div class="field" id="w-equity">
+    <label for="f-equity" id="l-equity" class="label">Current equity</label>
+    <input id="f-equity" data-key="equity" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-equity e-equity">
+    <p class="hint" id="h-equity">Balance plus the floating profit or loss of your open trades, right now.</p>
+    <p class="error" id="e-equity" role="alert" hidden></p>
+  </div>
+  <h2>Daily loss limit</h2>
+  <div class="edit">
+    <div class="field" id="w-dailyPercent">
+      <label for="f-dailyPercent" id="l-dailyPercent" class="label">Daily limit (percent)</label>
+      <input id="f-dailyPercent" data-key="dailyPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyPercent e-dailyPercent">
+      <p class="hint" id="h-dailyPercent">Often called max daily loss. Check whether your firm counts balance or equity.</p>
+      <div class="status"><p class="error" id="e-dailyPercent" role="alert" hidden></p></div>
     </div>
-    <h3>Open trades and buffer</h3>
-    <div class="grid">
-<div class="field" id="w-openRisk">
-  <label for="f-openRisk" id="l-openRisk">Open risk on trades you already have</label>
-  <input id="f-openRisk" data-key="openRisk" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-openRisk e-openRisk">
-  <p class="hint" id="h-openRisk">The further loss if every open trade hits its stop from the current price. Leave empty if none.</p>
-  <p class="error" id="e-openRisk" role="alert" hidden></p>
-</div>
-<div class="field" id="w-buffer">
-  <label for="f-buffer" id="l-buffer">Room to keep unused</label>
-  <input id="f-buffer" data-key="buffer" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-buffer e-buffer">
-  <p class="hint" id="h-buffer">Room you want to keep unused. Leave empty if none.</p>
-  <p class="error" id="e-buffer" role="alert" hidden></p>
-</div>
+    <div class="field" id="w-dailyOf">
+      <label for="f-dailyOf" id="l-dailyOf" class="label">Daily limit: percent of this amount</label>
+      <input id="f-dailyOf" data-key="dailyOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyOf e-dailyOf">
+      <p class="hint" id="h-dailyOf">The amount your firm takes the percent of, often the starting balance.</p>
+      <div class="status"><p class="error" id="e-dailyOf" role="alert" hidden></p></div>
     </div>
-    <details class="more">
-      <summary>What is this?</summary>
-      <p>Some accounts have rules that end the account if you lose too much in a day or in total. Lotcheck works out how much room is left and sizes the trade so that the planned loss at your stop stays inside that room. Gaps and slippage can still make the loss larger. It is only as right as the numbers you enter.</p>
-    </details>
+    <div class="field" id="w-dailyStart">
+      <label for="f-dailyStart" id="l-dailyStart" class="label">Value at the start of the trading day</label>
+      <input id="f-dailyStart" data-key="dailyStart" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-dailyStart e-dailyStart">
+      <p class="hint" id="h-dailyStart">Check when your firm's day resets and what value it uses.</p>
+      <div class="status"><p class="error" id="e-dailyStart" role="alert" hidden></p></div>
+    </div>
+  </div>
+  <h2>Total loss limit</h2>
+  <fieldset class="block" id="fs-totalType" aria-describedby="h-totalType">
+    <legend class="label">Type of total limit</legend>
+    <p class="hint hint-top" id="h-totalType">Firms often call these max drawdown (fixed) and trailing drawdown. The floor is the account value you must stay above.</p>
+    <div class="chips">
+      <label for="total-static"><input type="radio" id="total-static" name="totalType" value="static" data-key="totalType"><span id="total-static-text">Fixed floor</span></label>
+      <label for="total-trailing"><input type="radio" id="total-trailing" name="totalType" value="trailing" data-key="totalType"><span id="total-trailing-text">Trailing floor</span></label>
+    </div>
+    </fieldset>
+  <p class="lookup" id="trailing-note" hidden>This room assumes the floor does not move while the trade is open. If your firm's floor follows equity, profit made before the stop raises the floor, and the stop can then break the limit.</p>
+  <div class="edit">
+    <div class="field" id="w-totalPercent">
+      <label for="f-totalPercent" id="l-totalPercent" class="label">Total limit (percent)</label>
+      <input id="f-totalPercent" data-key="totalPercent" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalPercent e-totalPercent">
+      <p class="hint" id="h-totalPercent">The most your firm lets the account fall in total.</p>
+      <div class="status"><p class="error" id="e-totalPercent" role="alert" hidden></p></div>
+    </div>
+    <div class="field" id="w-totalInitial">
+      <label for="f-totalInitial" id="l-totalInitial" class="label">Starting balance of the account</label>
+      <input id="f-totalInitial" data-key="totalInitial" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalInitial e-totalInitial">
+      <p class="hint" id="h-totalInitial">The starting balance the fixed floor is measured from.</p>
+      <div class="status"><p class="error" id="e-totalInitial" role="alert" hidden></p></div>
+    </div>
+    <div class="field" id="w-totalOf" hidden>
+      <label for="f-totalOf" id="l-totalOf" class="label">Total limit: percent of this amount</label>
+      <input id="f-totalOf" data-key="totalOf" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalOf e-totalOf">
+      <p class="hint" id="h-totalOf">The amount a trailing limit takes the percent of.</p>
+      <div class="status"><p class="error" id="e-totalOf" role="alert" hidden></p></div>
+    </div>
+    <div class="field" id="w-totalHigh" hidden>
+      <label for="f-totalHigh" id="l-totalHigh" class="label">Highest value reached</label>
+      <input id="f-totalHigh" data-key="totalHigh" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalHigh e-totalHigh">
+      <p class="hint" id="h-totalHigh">The high-water mark your firm uses. Check if it counts balance or equity.</p>
+      <div class="status"><p class="error" id="e-totalHigh" role="alert" hidden></p></div>
+    </div>
+    <div class="field" id="w-totalFloorCap" hidden>
+      <label for="f-totalFloorCap" id="l-totalFloorCap" class="label">Floor stops rising at (optional)</label>
+      <input id="f-totalFloorCap" data-key="totalFloorCap" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-totalFloorCap e-totalFloorCap">
+      <p class="hint" id="h-totalFloorCap">If your firm stops the floor from rising above a value, enter it here.</p>
+      <div class="status"><p class="error" id="e-totalFloorCap" role="alert" hidden></p></div>
+    </div>
+  </div>
+  <h2>Open trades and buffer</h2>
+  <div class="edit">
+    <div class="field" id="w-openRisk">
+      <label for="f-openRisk" id="l-openRisk" class="label">Open risk on trades you already have</label>
+      <input id="f-openRisk" data-key="openRisk" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-openRisk e-openRisk">
+      <p class="hint" id="h-openRisk">The further loss if every open trade hits its stop from the current price. Leave empty if none.</p>
+      <div class="status"><p class="error" id="e-openRisk" role="alert" hidden></p></div>
+    </div>
+    <div class="field" id="w-buffer">
+      <label for="f-buffer" id="l-buffer" class="label">Room to keep unused</label>
+      <input id="f-buffer" data-key="buffer" type="text" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="h-buffer e-buffer">
+      <p class="hint" id="h-buffer">Room you want to keep unused. Leave empty if none.</p>
+      <div class="status"><p class="error" id="e-buffer" role="alert" hidden></p></div>
+    </div>
+  </div>
+  <details class="more">
+    <summary>What is this?</summary>
+    <p>Some accounts have rules that end the account if you lose too much in a day or in total. Lotcheck works out how much room is left and sizes the trade so that the planned loss at your stop stays inside that room. Gaps and slippage can still make the loss larger. It is only as right as the numbers you enter.</p>
   </details>
 </section>
 
-<section class="result" id="result" aria-live="polite" aria-atomic="false" aria-labelledby="result-title">
-  <h2 id="result-title" class="sr-only">Result</h2>
-  <div id="result-body"></div>
-  <p class="explain" id="costs-line">Swaps, financing and fees charged as a percent of the trade are never included.</p>
-  <p class="disclaimer">A stop-loss does not guarantee this loss. Gaps and slippage can make the real loss larger. Lotcheck does not give trading advice.</p>
-</section>
-
-<section class="card memory" id="card-memory" aria-labelledby="t-memory">
-  <h2 id="t-memory" class="plain-title">Saved inputs</h2>
-  <label class="check" for="f-remember"><input type="checkbox" id="f-remember" aria-describedby="h-remember"> <span>Remember my inputs in this browser</span></label>
-  <p class="hint" id="h-remember">Saves your account currency, risk setting, instrument type, symbol, currencies, contract size, pip size, lot sizes and leverage in this browser only. Balance, prices, commission and loss-limit values are never saved, because they change.</p>
-  <p class="hint" id="remember-unavailable" hidden>Saving is not available in this browser, so your inputs are only kept while this page is open.</p>
-  <button type="button" id="b-forget">Forget saved inputs</button>
-  <p class="hint" id="forget-status" role="status"></p>
+<section class="screen" id="result" aria-labelledby="t-result" hidden>
+  <h1 id="t-result" tabindex="-1">Result</h1>
+  <div class="result" id="result-region" aria-live="polite" aria-atomic="false">
+    <div id="result-body"></div>
+    <p class="explain" id="costs-line">Swaps, financing and fees charged as a percent of the trade are never included.</p>
+    <p class="disclaimer">A stop-loss does not guarantee this loss. Gaps and slippage can make the real loss larger. Lotcheck does not give trading advice.</p>
+  </div>
+  <section class="memory" id="card-memory" aria-labelledby="t-memory">
+    <h2 id="t-memory" class="plain-title">Saved inputs</h2>
+    <label class="remember" for="f-remember"><input type="checkbox" id="f-remember" aria-describedby="h-remember"> <span>Remember my inputs in this browser</span></label>
+    <p class="hint" id="h-remember">Saves your account currency, risk setting, instrument type, symbol, currencies, contract size, pip size, lot sizes and leverage in this browser only. Balance, prices, commission and loss-limit values are never saved, because they change.</p>
+    <p class="hint" id="remember-unavailable" hidden>Saving is not available in this browser, so your inputs are only kept while this page is open.</p>
+    <button type="button" class="plain-button" id="b-forget">Forget saved inputs</button>
+    <p class="hint" id="forget-status" role="status"></p>
+  </section>
 </section>
 
 </main>
+<footer class="nav">
+  <button type="button" class="btn" id="b-back">Back</button>
+  <button type="button" class="btn primary" id="b-next">Next</button>
+</footer>
+</div>
 <footer class="page-footer">
   <p>Lotcheck is free and open source. It is a calculator, not advice. Check every number against your own platform. Guides for finding these numbers and for loss limits are in the docs folder of the Lotcheck project.</p>
+  <p>Version 0.1.0</p>
 </footer>
 <script type="module">
 // Exact numbers for Lotcheck.
@@ -1753,7 +2189,7 @@ const MAIN_NUMBER_KEYS = [
   "leverage",
 ];
 
-// Fields that hold a decimal number in the loss-limits card.
+// Fields that hold a decimal number on the loss-limits screen.
 const GUARD_NUMBER_KEYS = [
   "equity",
   "dailyPercent",
@@ -2419,9 +2855,10 @@ function isAboveZero(text) {
 // has text does too).
 function ruleState(s, needed, optional) {
   const started = needed.concat(optional).some((key) => nonEmpty(s[key]));
-  const missing = needed.filter((key) => !nonEmpty(s[key]) || !isAboveZero(s[key])).map((key) => FIELD_LABELS[key]);
-  for (const key of optional) if (nonEmpty(s[key]) && !isAboveZero(s[key])) missing.push(FIELD_LABELS[key]);
-  return { started, complete: started && missing.length === 0, missing };
+  const missingKeys = needed.filter((key) => !nonEmpty(s[key]) || !isAboveZero(s[key]));
+  for (const key of optional) if (nonEmpty(s[key]) && !isAboveZero(s[key])) missingKeys.push(key);
+  const missing = missingKeys.map((key) => FIELD_LABELS[key]);
+  return { started, complete: started && missing.length === 0, missing, missingKeys };
 }
 
 const UNFINISHED = {
@@ -2445,12 +2882,19 @@ function guardStatusText(daily, total) {
   return "Not applied yet: " + (daily === "unfinished" ? UNFINISHED.daily : UNFINISHED.total) + " is not finished.";
 }
 
-// Which loss-limit rules are started, which are complete, and what the card
-// and the result say about them. The fields count whether the card is open or
-// collapsed.
+const GUARD_NO_TEXT = "Not applied: you answered No.";
+
+// Which loss-limit rules are started, which are complete, and what the
+// screen and the result say about them. Loss limits count only when the
+// answer to "Does your account have loss limits?" is Yes. With No, whatever
+// is typed in the limit fields is kept but ignored completely.
 function guardInfo(state) {
   const s = cleanState(state);
   const info = { open: s.guardOpen, active: false, input: null, note: null, block: null };
+  if (s.guardOpen !== true) {
+    info.note = GUARD_NO_TEXT;
+    return info;
+  }
   const total = totalKeys(s);
   const daily = ruleState(s, DAILY_KEYS, []);
   const totalRule = ruleState(s, total.needed, total.optional);
@@ -2462,6 +2906,7 @@ function guardInfo(state) {
     const list = rule.missing.slice();
     if (equityMissing) list.push(FIELD_LABELS.equity);
     if (list.length > 0) {
+      if (info.focusKey === undefined) info.focusKey = equityMissing ? "equity" : rule.missingKeys[0];
       sentences.push("Finish or clear the " + name + " limit fields first. Still needed: " + list.join(", ") + ".");
     }
   }
@@ -2555,8 +3000,9 @@ function pipValueText(q, currency) {
   return moneyDisplay(q, currency, "down");
 }
 
-// The check line: what 1 pip or point is worth for 1.00 lot.
-function checkLineText(state) {
+// The check line in three parts: what 1 pip or point is worth for 1.00 lot.
+// The value is shown large on the page. Null while it cannot be worked out.
+function checkLineParts(state) {
   const s = cleanState(state);
   if (!isCurrency(s.accountCurrency) || !isCurrency(s.quoteCurrency)) return null;
   if (baseConflict(s)) return null;
@@ -2586,15 +3032,18 @@ function checkLineText(state) {
     rate = Q.ONE.div(entry);
   }
   const shown = pipValueText(pip.mul(contract).mul(rate), s.accountCurrency);
-  return (
-    "With these numbers, 1.00 lot moving 1 pip/point (" +
-    s.pipSize +
-    ") is worth " +
-    shown +
-    " " +
-    s.accountCurrency +
-    ". Compare this with your platform before you trust the result."
-  );
+  return {
+    lead: "With these numbers, 1.00 lot moving 1 pip/point (" + s.pipSize + ") is worth",
+    value: shown + " " + s.accountCurrency,
+    tail: "Compare this with your platform before you trust the result.",
+  };
+}
+
+// The check line as one sentence.
+function checkLineText(state) {
+  const parts = checkLineParts(state);
+  if (parts === null) return null;
+  return parts.lead + " " + parts.value + ". " + parts.tail;
 }
 
 // ---------------------------------------------------------------------------
@@ -2687,6 +3136,7 @@ function buildResultModel(state, size, room) {
     rows.push(["Loss budget used", moneyText(size.riskBudget, currency, "down")]);
   }
   rows.push(["Limited by", LIMITED_BY_TEXTS[size.limitedBy] || LIMITED_BY_TEXTS.risk]);
+  if (s.guardOpen !== true) rows.push(["Loss limits", "Not applied"]);
   rows.push(["Stop distance", distance]);
   rows.push([
     "Value of one " + unitOne + " per 1.00 lot",
@@ -2726,6 +3176,7 @@ function evaluate(state) {
   const view = {
     errors,
     checkLine: checkLineText(s),
+    checkParts: checkLineParts(s),
     conversion: conv,
     guard,
     result: null,
@@ -2738,8 +3189,9 @@ function evaluate(state) {
   if (baseConflict(s)) errors.baseCurrency = messageForError("baseCurrency", "conflict", s);
   const numberKeys = MAIN_NUMBER_KEYS.slice();
   if (conv.needed) numberKeys.push("convPrice");
-  {
-    // The loss-limit fields count whether the card is open or collapsed.
+  if (s.guardOpen === true) {
+    // The loss-limit fields are checked only when the answer is Yes. The
+    // fields of the other kind of total limit are not checked.
     const hiddenKeys =
       s.totalType === "trailing" ? ["totalInitial"] : ["totalOf", "totalHigh", "totalFloorCap"];
     for (const key of GUARD_NUMBER_KEYS) if (!hiddenKeys.includes(key)) numberKeys.push(key);
@@ -2877,6 +3329,280 @@ function riskLabel(state) {
 }
 
 // ---------------------------------------------------------------------------
+// The screens: which exist, what blocks leaving one, what the sentences say.
+// Everything here is pure; the page only wires it to the document.
+// ---------------------------------------------------------------------------
+
+const SCREEN_TITLES = {
+  account: "Your account",
+  instrument: "What you trade",
+  conversion: "Currency conversion",
+  trade: "Your trade",
+  limits: "Loss limits",
+  result: "Result",
+};
+
+// The four numbered steps, each opening on its first screen.
+const STEPS = [
+  { screen: "account", label: "Account" },
+  { screen: "instrument", label: "Instrument" },
+  { screen: "trade", label: "Trade" },
+  { screen: "result", label: "Result" },
+];
+
+// The step each screen belongs to (1 to 4).
+const SCREEN_STEP = { account: 1, instrument: 2, conversion: 2, trade: 3, limits: 3, result: 4 };
+
+const TICK_MESSAGE = "Tick the box once you have compared the numbers.";
+const CONV_CHOICE_MESSAGE = "Choose which price you are entering.";
+const GUARD_EMPTY_MESSAGE = "Enter at least one complete limit, or go back and answer No.";
+
+// The keys on each screen, in the order they appear on the page. "checked" is
+// the tick, "convPair" the pair choice and "guard" the message about the
+// limits as a whole.
+const SCREEN_KEYS = {
+  account: ["accountCurrency", "balance", "riskValue"],
+  instrument: ["symbol", "baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep", "maxLot", "checked"],
+  conversion: ["convPair", "convPrice"],
+  trade: ["entry", "stop", "extraDistance", "commission", "leverage"],
+  limits: [
+    "guard",
+    "equity",
+    "dailyPercent",
+    "dailyOf",
+    "dailyStart",
+    "totalPercent",
+    "totalInitial",
+    "totalOf",
+    "totalHigh",
+    "totalFloorCap",
+    "openRisk",
+    "buffer",
+  ],
+};
+
+// The instrument numbers behind "Change numbers".
+const NUMBER_FIELD_KEYS = ["baseCurrency", "quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep", "maxLot"];
+
+// The screens that exist for this state, in order.
+function screensFor(state) {
+  const screens = ["account", "instrument"];
+  if (conversionLabels(state) !== null) screens.push("conversion");
+  screens.push("trade");
+  if (state.guardOpen === true) screens.push("limits");
+  screens.push("result");
+  return screens;
+}
+
+// The fields on a screen that must not be empty.
+function requiredKeys(s, id) {
+  if (id === "account") return ["accountCurrency", "balance", "riskValue"];
+  if (id === "instrument") {
+    const list = s.instrumentType === "forex" ? ["baseCurrency"] : [];
+    return list.concat(["quoteCurrency", "contractSize", "pipSize", "minLot", "lotStep"]);
+  }
+  if (id === "conversion") return ["convPair", "convPrice"];
+  if (id === "trade") return ["entry", "stop"];
+  return [];
+}
+
+function emptyMessage(key) {
+  if (key === "convPair") return CONV_CHOICE_MESSAGE;
+  return "Enter the " + FIELD_LABELS[key].toLowerCase() + ".";
+}
+
+const SYMBOL_MESSAGE = "Enter a symbol, for example EURUSD.";
+
+// True for a forex pair with no symbol and none of the seven instrument
+// fields filled in: the first view of the instrument screen.
+function instrumentIsBlank(state) {
+  const s = cleanState(state);
+  return s.instrumentType === "forex" && normalizeSymbol(s.symbol) === "" && NUMBER_FIELD_KEYS.every((key) => s[key] === "");
+}
+
+// What stops the user from leaving a screen: a list of { key, message, live }
+// in page order. "live" problems come from view.errors and show while typing;
+// the others (an empty field, the tick, unfinished limits) show once Next was
+// pressed on that screen. The result screen has no problems of its own.
+function screenProblems(state, view, id) {
+  const keys = SCREEN_KEYS[id];
+  if (!keys) return [];
+  const s = cleanState(state);
+  const errors = (view && view.errors) || {};
+  if (id === "instrument" && instrumentIsBlank(s)) return [{ key: "symbol", message: SYMBOL_MESSAGE, live: false }];
+  const required = requiredKeys(s, id);
+  const out = [];
+  for (const key of keys) {
+    if (key === "checked") {
+      if (errors.checked) out.push({ key, message: errors.checked, live: true });
+      else if (!s.checked) out.push({ key, message: TICK_MESSAGE, live: false });
+    } else if (key === "guard") {
+      if (s.guardOpen !== true) continue;
+      const info = guardInfo(s);
+      if (info.block) out.push({ key, message: info.block, live: false, focus: info.focusKey });
+      else if (!info.active) out.push({ key, message: GUARD_EMPTY_MESSAGE, live: false });
+    } else if (errors[key]) {
+      out.push({ key, message: errors[key], live: true });
+    } else if (required.includes(key) && s[key] === "") {
+      out.push({ key, message: emptyMessage(key), live: false });
+    }
+  }
+  return out;
+}
+
+// The first screen before `before` (or before the result when `before` is
+// null) that has a problem, or null.
+function firstScreenWithProblem(state, view, before) {
+  for (const id of screensFor(state)) {
+    if (id === before || id === "result") return null;
+    if (screenProblems(state, view, id).length > 0) return id;
+  }
+  return null;
+}
+
+function nextScreen(state, current) {
+  const screens = screensFor(state);
+  const at = screens.indexOf(current);
+  return at >= 0 && at + 1 < screens.length ? screens[at + 1] : null;
+}
+
+function prevScreen(state, current) {
+  const screens = screensFor(state);
+  const at = screens.indexOf(current);
+  return at > 0 ? screens[at - 1] : null;
+}
+
+// The Back and Next buttons for a screen.
+function footerFor(state, current) {
+  const next = nextScreen(state, current);
+  return {
+    showBack: current !== "account",
+    nextLabel: current === "result" ? "New trade" : next === "result" ? "Show result" : "Next",
+  };
+}
+
+// The four steps of the progress line: its state ("done", "now" or "todo"),
+// whether it can be clicked, and the screen it opens. A step can be opened
+// when it is before the current one, or when no screen before it has a problem.
+function progressSteps(state, view, current) {
+  const now = SCREEN_STEP[current] || 1;
+  return STEPS.map((step, index) => {
+    const number = index + 1;
+    const status = number < now ? "done" : number === now ? "now" : "todo";
+    // The current step opens its main screen when another of its screens
+    // (conversion, limits) is showing.
+    let clickable = status === "done" || (status === "now" && current !== step.screen);
+    if (status === "todo") clickable = firstScreenWithProblem(state, view, step.screen) === null;
+    return { label: step.label, screen: step.screen, status, clickable };
+  });
+}
+
+// What pressing Next (or a step in the progress line) does: the screen to
+// show and the problems to show on it. A move towards the result is held
+// until no earlier screen has a problem.
+function advance(state, view, current, target) {
+  if (target === undefined) target = nextScreen(state, current);
+  if (target === null) return { target: current, problems: screenProblems(state, view, current) };
+  const screens = screensFor(state);
+  const from = screens.indexOf(current);
+  const to = screens.indexOf(target);
+  if (to > from) {
+    // A forward move stops at the first screen from here up to the target
+    // that has a problem.
+    for (let i = from; i < to; i++) {
+      const problems = screenProblems(state, view, screens[i]);
+      if (problems.length > 0) return { target: screens[i], problems };
+    }
+  }
+  if (target === "result") {
+    const blocked = firstScreenWithProblem(state, view, null);
+    if (blocked !== null) return { target: blocked, problems: screenProblems(state, view, blocked) };
+  }
+  return { target, problems: [] };
+}
+
+// The screen to show after the state changed: the result gives way to an
+// earlier screen that has a problem, and a screen that no longer exists gives
+// way to a neighbour.
+function settleScreen(state, view, current) {
+  if (current === "result") {
+    const blocked = firstScreenWithProblem(state, view, null);
+    return blocked === null ? "result" : blocked;
+  }
+  if (screensFor(state).includes(current)) return current;
+  if (current === "limits") return "trade";
+  if (current === "conversion") return "instrument";
+  return "account";
+}
+
+// "New trade": clears the entry, the stop and the conversion price and keeps
+// everything else, the tick included. Returns the new state and the screen to
+// open.
+function startNewTrade(state) {
+  let next = state;
+  for (const key of ["entry", "stop", "convPrice"]) next = editField(next, key, "");
+  return { state: next, screen: screensFor(next).includes("conversion") ? "conversion" : "trade" };
+}
+
+// The id of the control to focus for a problem key.
+function focusIdFor(key) {
+  if (key === "convPair") return "conv-aq";
+  if (key === "guard") return "f-equity";
+  return "f-" + key;
+}
+
+// ---------------------------------------------------------------------------
+// The instrument numbers: sentences and whether they are shown
+// ---------------------------------------------------------------------------
+
+// The line above the numbers.
+function numbersIntro(state) {
+  const s = cleanState(state);
+  const symbol = s.symbol.toUpperCase();
+  const typical = PREFILL_KEYS.every((key) => s.tags[key] === true);
+  if (typical) return "Typical values for " + symbol + ". Brokers differ.";
+  return symbol === "" ? "Your numbers." : "Your numbers for " + symbol + ".";
+}
+
+// The two plain sentences, as lists of pieces. A piece with strong set is
+// shown emphasised. The values are the typed text, not reformatted.
+function plainNumberLines(state) {
+  const s = cleanState(state);
+  const show = (text) => (text === "" ? "?" : text);
+  const first = [
+    { text: "1.00 lot is " },
+    { text: show(s.contractSize) + " " + (s.baseCurrency === "" ? "units" : s.baseCurrency), strong: true },
+  ];
+  const second = [
+    { text: "Sizes start at " },
+    { text: show(s.minLot), strong: true },
+    { text: " lot, in steps of " },
+    { text: show(s.lotStep), strong: true },
+  ];
+  if (s.maxLot !== "") {
+    second.push({ text: ", up to " });
+    second.push({ text: s.maxLot, strong: true });
+  }
+  return [first, second];
+}
+
+// Whether the number fields are shown. They are forced open (and the toggle
+// is hidden) when a number is missing or wrong or the base currency
+// contradicts the symbol. Otherwise they are folded by default when every
+// pre-filled number is still a typical value, and `choice` (true, false or
+// null for none) is the user's last toggle.
+function numbersView(state, view, choice) {
+  const s = cleanState(state);
+  const errors = (view && view.errors) || {};
+  const incomplete = requiredKeys(s, "instrument").some((key) => s[key] === "");
+  const wrong = NUMBER_FIELD_KEYS.some((key) => errors[key]) || baseConflict(s);
+  const forced = incomplete || wrong;
+  const typical = PREFILL_KEYS.every((key) => s.tags[key] === true);
+  const open = forced ? true : typeof choice === "boolean" ? choice : !typical;
+  return { open, forced, canToggle: !forced, hidden: instrumentIsBlank(s) };
+}
+
+// ---------------------------------------------------------------------------
 // The page. Everything below only runs when a document exists.
 // ---------------------------------------------------------------------------
 
@@ -2907,15 +3633,21 @@ function makeTable(rows) {
 }
 
 function renderResultInto(model) {
-  const card = byId("result");
+  const region = byId("result-region");
   const body = byId("result-body");
   body.replaceChildren();
+  if (model === null) return;
   const stop = model.kind === "below-minimum" || model.kind === "no-budget" || model.kind === "breached";
-  card.className = "result" + (stop ? " is-stop" : "") + (model.kind === "ok" ? " is-ok" : "");
+  region.className = "result" + (stop ? " is-stop" : "") + (model.kind === "ok" ? " is-ok" : "");
 
   if (model.kind === "ok") {
     if (model.caution) body.appendChild(makeNode("p", "symbol-caution", model.caution));
-    body.appendChild(makeNode("p", "lots", model.headline));
+    const headline = makeNode("p", "lots");
+    const at = model.headline.lastIndexOf(" ");
+    headline.appendChild(makeNode("span", "lots-number", model.headline.slice(0, at)));
+    headline.appendChild(document.createTextNode(" "));
+    headline.appendChild(makeNode("span", "lots-unit", model.headline.slice(at + 1)));
+    body.appendChild(headline);
     body.appendChild(makeNode("p", "loss-line", model.lossLine));
     body.appendChild(makeTable(model.rows));
     if (model.conversionNote) body.appendChild(makeNode("p", "explain", model.conversionNote));
@@ -2924,15 +3656,15 @@ function renderResultInto(model) {
   } else {
     body.appendChild(makeNode("p", "waiting", model.message));
   }
-  if (model.guard) {
-    body.appendChild(makeNode("p", "block-title", "Room under your loss limits"));
-    body.appendChild(makeTable(model.guard.rows));
-    if (model.guard.trailingNote) body.appendChild(makeNode("p", "explain", model.guard.trailingNote));
-  }
   if (model.notes.length > 0) {
     const list = makeNode("ul", "cautions");
     for (const text of model.notes) list.appendChild(makeNode("li", "", text));
     body.appendChild(list);
+  }
+  if (model.guard) {
+    body.appendChild(makeNode("p", "block-title", "Room under your loss limits"));
+    body.appendChild(makeTable(model.guard.rows));
+    if (model.guard.trailingNote) body.appendChild(makeNode("p", "explain", model.guard.trailingNote));
   }
 }
 
@@ -2946,7 +3678,7 @@ function syncControls(state) {
   for (const node of nodes) {
     const key = node.getAttribute("data-key");
     if (node.type === "radio") {
-      node.checked = state[key] === node.value;
+      node.checked = String(state[key]) === node.value;
     } else if (node.type === "checkbox") {
       node.checked = state[key] === true;
     } else if (node.value !== state[key]) {
@@ -2963,14 +3695,21 @@ function syncControls(state) {
   }
 }
 
-function renderPage(state, view) {
-  syncControls(state);
+// The messages to show under fields: format and range errors always, and the
+// "empty" kind of problem on every screen where Next was pressed.
+function visibleMessages(state, view, ui) {
+  const messages = {};
+  for (const id of screensFor(state)) {
+    if (!ui.attempted[id]) continue;
+    for (const problem of screenProblems(state, view, id)) messages[problem.key] = problem.message;
+  }
+  return Object.assign(messages, view.errors);
+}
 
-  // Errors next to their fields.
-  const wraps = document.querySelectorAll(".error");
-  for (const node of wraps) {
+function renderErrors(messages) {
+  for (const node of document.querySelectorAll(".error")) {
     const key = node.id.slice(2);
-    const message = view.errors[key];
+    const message = messages[key];
     const input = byId("f-" + key);
     // Only rewrite the text when it changed, so a screen reader does not
     // announce the same error again on every keystroke.
@@ -2984,12 +3723,61 @@ function renderPage(state, view) {
       if (input) input.removeAttribute("aria-invalid");
     }
   }
+}
 
-  // A mistake in a loss-limit field must be visible, so a collapsed card opens.
-  const guardBox = byId("guard");
-  if (!guardBox.open && GUARD_NUMBER_KEYS.some((key) => view.errors[key])) guardBox.open = true;
+function renderNumbers(state, view, ui) {
+  byId("numbers-intro").textContent = numbersIntro(state);
+  const list = byId("numbers-plain");
+  list.replaceChildren();
+  for (const line of plainNumberLines(state)) {
+    const item = document.createElement("li");
+    for (const piece of line) item.appendChild(piece.strong ? makeNode("b", "", piece.text) : document.createTextNode(piece.text));
+    list.appendChild(item);
+  }
+  const shown = numbersView(state, view, ui.numbersChoice);
+  byId("check-panel").hidden = shown.hidden;
+  byId("numbers-edit").hidden = !shown.open;
+  list.hidden = shown.open;
+  const toggle = byId("b-numbers");
+  toggle.hidden = !shown.canToggle;
+  toggle.textContent = shown.open ? "Hide numbers" : "Change numbers";
+  toggle.setAttribute("aria-expanded", shown.open ? "true" : "false");
+}
 
-  // "typical value, check with your broker" tags.
+function renderCheckLine(parts) {
+  const box = byId("check-line");
+  if (parts) {
+    byId("check-lead").textContent = parts.lead;
+    byId("check-value").textContent = parts.value;
+    byId("check-tail").textContent = parts.tail;
+    box.hidden = false;
+  } else {
+    byId("check-lead").textContent = "";
+    byId("check-value").textContent = "";
+    byId("check-tail").textContent = "";
+    box.hidden = true;
+  }
+}
+
+function renderProgress(state, view, ui) {
+  const steps = progressSteps(state, view, ui.current);
+  const buttons = document.querySelectorAll("#progress button");
+  steps.forEach((step, index) => {
+    const button = buttons[index];
+    button.parentNode.className = step.status === "todo" ? "" : step.status;
+    button.disabled = !step.clickable;
+    if (step.status === "now") button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
+  });
+  const number = SCREEN_STEP[ui.current];
+  byId("step-count").textContent = "Step " + number + " of 4";
+}
+
+function renderPage(state, view, ui) {
+  syncControls(state);
+  renderErrors(visibleMessages(state, view, ui));
+
+  // "typical value" tags.
   for (const key of PREFILL_KEYS) setHidden("t-" + key, state.tags[key] !== true);
 
   // Instrument type: help and confirmation.
@@ -3001,29 +3789,17 @@ function renderPage(state, view) {
   const cautionNode = byId("c-symbol");
   cautionNode.textContent = caution || "";
   cautionNode.hidden = caution === null;
+  renderNumbers(state, view, ui);
+  renderCheckLine(view.checkParts);
 
   // Risk label.
   byId("l-riskValue").textContent = riskLabel(state);
 
-  // Check line.
-  const check = byId("check-line");
-  if (view.checkLine) {
-    check.textContent = view.checkLine;
-    check.hidden = false;
-  } else {
-    check.textContent = "";
-    check.hidden = true;
-  }
-
-  // Conversion card.
+  // Conversion.
   const labels = conversionLabels(state);
   const instrumentSource = view.conversion.source === "instrument";
-  setHidden("card-conversion", labels === null && !instrumentSource);
   setHidden("conversion-instrument", !instrumentSource || state.instrumentType !== "forex");
   setHidden("conversion-instrument-other", !instrumentSource || state.instrumentType === "forex");
-  setHidden("conversion-explain", instrumentSource);
-  setHidden("conversion-inputs", instrumentSource);
-  setHidden("conversion-pair-warning", instrumentSource || labels === null);
   if (labels !== null) {
     byId("conversion-explain").textContent = labels.explain;
     byId("conversion-lookup").textContent = labels.lookup;
@@ -3040,7 +3816,13 @@ function renderPage(state, view) {
     rate.hidden = true;
   }
 
-  // Loss-limit card.
+  // Costs open by themselves when they hold a value or a mistake.
+  const costs = byId("costs");
+  if (!costs.open && ["extraDistance", "commission", "leverage"].some((key) => state[key] !== "" || view.errors[key])) {
+    costs.open = true;
+  }
+
+  // Loss limits.
   const trailing = state.totalType === "trailing";
   setHidden("w-totalInitial", trailing);
   setHidden("w-totalOf", !trailing);
@@ -3049,7 +3831,16 @@ function renderPage(state, view) {
   setHidden("trailing-note", !trailing);
   byId("guard-status").textContent = view.guard.note || "";
 
-  renderResultInto(view.result);
+  // Screens, header, footer bar.
+  for (const node of document.querySelectorAll(".screen")) node.hidden = node.id !== ui.current;
+  renderProgress(state, view, ui);
+  const footer = footerFor(state, ui.current);
+  byId("b-back").hidden = !footer.showBack;
+  byId("b-next").textContent = footer.nextLabel;
+  document.title = SCREEN_TITLES[ui.current] + " \u00b7 Lotcheck";
+
+  // The lot size exists in the page only while the result screen is shown.
+  renderResultInto(ui.current === "result" ? view.result : null);
 }
 
 function storageAvailable() {
@@ -3062,17 +3853,36 @@ function storageAvailable() {
   }
 }
 
+function prefersReducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function startPage() {
   let state = defaultState();
+  // Navigation is never saved: the page always opens on the first screen.
+  const ui = { current: "account", attempted: {}, numbersChoice: null };
   const canStore = storageAvailable();
   const remember = byId("f-remember");
   const forget = byId("b-forget");
   const forgetStatus = byId("forget-status");
-  const guardBox = byId("guard");
+  const forgetStatusAccount = byId("forget-status-account");
+  const savedNote = byId("saved-note");
+  const forgetAccount = byId("b-forget-account");
+
+  // The note on the first screen shows exactly while saving is on; the status
+  // lines of both places always say the same.
+  function syncSaved(message) {
+    savedNote.hidden = !remember.checked;
+    if (message !== undefined) {
+      forgetStatus.textContent = message;
+      forgetStatusAccount.textContent = message;
+    }
+  }
 
   if (!canStore) {
     remember.disabled = true;
     forget.disabled = true;
+    forgetAccount.disabled = true;
     byId("remember-unavailable").hidden = false;
   } else {
     try {
@@ -3088,7 +3898,6 @@ function startPage() {
       // Reading failed. Start with an empty form.
     }
   }
-  guardBox.open = state.guardOpen === true;
 
   function save() {
     if (!canStore || !remember.checked) return;
@@ -3100,7 +3909,15 @@ function startPage() {
   }
 
   function refresh() {
-    renderPage(state, evaluate(state));
+    let view = evaluate(state);
+    // If a change made an earlier screen invalid, show that screen.
+    const settled = settleScreen(state, view, ui.current);
+    if (settled !== ui.current) {
+      ui.attempted[settled] = true;
+      ui.current = settled;
+      view = evaluate(state);
+    }
+    renderPage(state, view, ui);
     save();
   }
 
@@ -3112,13 +3929,67 @@ function startPage() {
     }
   }
 
+  // Shows a screen. With problems, the first field with a problem is scrolled
+  // into the middle and focused; otherwise the page scrolls to the top and the
+  // heading of the screen gets the focus.
+  function show(id, problems) {
+    const changed = id !== ui.current;
+    ui.current = id;
+    if (problems.length > 0) ui.attempted[id] = true;
+    refresh();
+    const screen = byId(id);
+    if (changed) {
+      screen.classList.remove("enter");
+      void screen.offsetWidth;
+      screen.classList.add("enter");
+    }
+    const calm = prefersReducedMotion();
+    const target = problems.length > 0 ? byId(focusIdFor(problems[0].focus || problems[0].key)) : null;
+    if (target) {
+      target.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" });
+      target.focus({ preventScroll: true });
+    } else if (changed) {
+      window.scrollTo(0, 0);
+      screen.querySelector("h1").focus({ preventScroll: true });
+    }
+  }
+
+  function go(target) {
+    const view = evaluate(state);
+    const outcome = advance(state, view, ui.current, target);
+    show(outcome.target, outcome.problems);
+  }
+
+  function onNext() {
+    if (ui.current === "result") {
+      const fresh = startNewTrade(state);
+      state = fresh.state;
+      ui.attempted = {};
+      show(fresh.screen, []);
+      return;
+    }
+    go(undefined);
+  }
+
+  function onBack() {
+    const before = prevScreen(state, ui.current);
+    if (before !== null) show(before, []);
+  }
+
   const controls = document.querySelectorAll("[data-key]");
   for (const node of controls) {
     const key = node.getAttribute("data-key");
     if (node.type === "radio") {
       node.addEventListener("change", () => {
         if (!node.checked) return;
-        state = setChoice(state, key, node.value);
+        if (key === "instrumentType") {
+          state = setInstrumentType(state, node.value);
+          ui.numbersChoice = null;
+        } else if (key === "guardOpen") {
+          state = setChoice(state, key, node.value === "true");
+        } else {
+          state = setChoice(state, key, node.value);
+        }
         refresh();
       });
     } else if (node.type === "checkbox") {
@@ -3126,26 +3997,33 @@ function startPage() {
         state = { ...state, [key]: node.checked };
         refresh();
       });
-    } else if (key === "instrumentType") {
-      node.addEventListener("change", () => {
-        state = setInstrumentType(state, node.value);
-        refresh();
-      });
     } else {
       node.addEventListener("input", () => {
         state = editField(state, key, node.value);
+        if (key === "symbol") ui.numbersChoice = null;
         refresh();
+      });
+      node.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.isComposing) return;
+        event.preventDefault();
+        onNext();
       });
     }
   }
 
-  guardBox.addEventListener("toggle", () => {
-    state = { ...state, guardOpen: guardBox.open };
+  byId("b-next").addEventListener("click", onNext);
+  byId("b-back").addEventListener("click", onBack);
+  byId("b-numbers").addEventListener("click", () => {
+    const shown = numbersView(state, evaluate(state), ui.numbersChoice);
+    ui.numbersChoice = !shown.open;
     refresh();
+  });
+  document.querySelectorAll("#progress button").forEach((button) => {
+    button.addEventListener("click", () => go(button.getAttribute("data-go")));
   });
 
   remember.addEventListener("change", () => {
-    forgetStatus.textContent = "";
+    syncSaved("");
     if (remember.checked) {
       save();
     } else {
@@ -3153,12 +4031,15 @@ function startPage() {
     }
   });
 
-  forget.addEventListener("click", () => {
+  function forgetAll() {
     clearSaved();
     remember.checked = false;
-    forgetStatus.textContent = "Saved inputs removed from this browser.";
-  });
+    syncSaved("Saved inputs removed from this browser.");
+  }
+  forget.addEventListener("click", forgetAll);
+  forgetAccount.addEventListener("click", forgetAll);
 
+  syncSaved();
   refresh();
 }
 

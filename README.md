@@ -10,7 +10,7 @@ You do not need an account or any software. Three steps:
 
 1. Open the file `dist/lotcheck.html` in this repository on GitHub.
 2. Press the download button (the arrow, "Download raw file"). Your browser saves the file.
-3. Double-click the saved file. It opens in your browser. Fill in the cards from top to bottom. The result updates as you type.
+3. Double-click the saved file. It opens in your browser. The page takes you through four steps, one screen at a time: your account, what you trade, your trade, and the result. Press Next to move on and Back to change something.
 
 It works with no internet connection. Nothing is installed. Numbered releases may be offered later.
 
@@ -18,7 +18,7 @@ It works with no internet connection. Nothing is installed. Numbered releases ma
 
 Lotcheck is only as right as the numbers you give it. Contract size and point value are different for every broker and every instrument. One broker may count an index as 1 unit per point. Another may count it as 10 or 100. If this number is wrong, the lot size is wrong, and it can be wrong by a factor of 10 or more.
 
-So Lotcheck shows a **check line** under the instrument fields. It says what 1.00 lot is worth when the price moves by one pip or point. Compare that figure with the same figure in your trading platform. If they differ, one of your numbers is wrong.
+So Lotcheck shows a **check line** on the Instrument step. It says what 1.00 lot is worth when the price moves by one pip or point. Compare that figure with the same figure in your trading platform. If they differ, one of your numbers is wrong.
 
 For every instrument type, forex included, you must tick "I have checked these numbers in my platform" before a lot size is shown. Changing the account currency or any instrument field unticks it. Values the page pre-fills for a recognised currency pair are only typical values, so check them too.
 
@@ -33,7 +33,7 @@ See [docs/finding-your-numbers.md](docs/finding-your-numbers.md).
 - For pairs that start with your account currency (a USD account trading USDJPY, a EUR account trading EURUSD), converts the loss at your stop-loss price, so no conversion price is needed and the loss is not understated. This applies to every instrument type (for example a BTC account trading BTCUSD). For forex pairs the page asks for the base currency, because a symbol with extra letters in front (for example "mUSDJPY") cannot be recognised from the symbol alone.
 - Optionally includes commission and extra distance for spread or slippage, and tells you when either is left at zero. It never includes swaps, financing or fees charged as a percent of the trade.
 - Optionally shows an estimated margin, if you enter leverage. It uses the one leverage figure you enter. Brokers may use a different margin rate for each instrument.
-- Optionally caps the risk to the loss room left under your account's daily and total loss limits. It warns when a size would end exactly on a limit, when your equity is above the highest value you entered, and that a trailing floor is treated as a snapshot.
+- Optionally caps the risk to the loss room left under your account's daily and total loss limits. The limits apply only when you answer Yes to "Does your account have loss limits?". It warns when a size would end exactly on a limit, when your equity is above the highest value you entered, and that a trailing floor is treated as a snapshot.
 
 How the numbers are worked out: [docs/how-it-works.md](docs/how-it-works.md). Loss limits: [docs/loss-limits.md](docs/loss-limits.md).
 
@@ -43,7 +43,7 @@ How the numbers are worked out: [docs/how-it-works.md](docs/how-it-works.md). Lo
 - It gives no signals, no direction and no advice.
 - It uses no live prices. You type every number.
 - It does not connect to any account.
-- It pre-fills values only for recognised currency pairs, and tags them as typical values to check. Nothing is pre-filled for metals, commodities, indices or crypto. If a symbol is not a recognised currency pair, nothing is filled in and a caution tells you to check the instrument type.
+- It pre-fills values only for recognised currency pairs, and marks them as typical values to check. Nothing is pre-filled for metals, commodities, indices or crypto. If a symbol is not a recognised currency pair, nothing is filled in and a caution tells you to check the instrument type.
 - It has no firm or broker presets. Rules differ and change, so you enter your own.
 - No data leaves your device. There is no tracking and no analytics.
 

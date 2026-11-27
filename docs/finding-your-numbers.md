@@ -26,9 +26,9 @@ Example: your account is in BTC and you trade a symbol called XBTUSD. Its base c
 
 ## Pre-filled values
 
-For the "Forex pair" type only, Lotcheck pre-fills the base currency, quote currency, contract size, pip size, minimum lot and lot step, but only when the first six characters of the symbol (letters and digits only, any case) are two known currency codes, such as EURUSD or usd/jpy. Each pre-filled field is tagged "typical value, check with your broker". Editing a field removes its tag.
+For the "Forex pair" type only, Lotcheck pre-fills the base currency, quote currency, contract size, pip size, minimum lot and lot step, but only when the first six characters of the symbol (letters and digits only, any case) are two known currency codes, such as EURUSD or usd/jpy. The Instrument step then shows them as two short sentences under the line "Typical values for EURUSD. Brokers differ." (with your own symbol). Press "Change numbers" to see and edit all seven fields. Each pre-filled field is tagged "typical value, check with your broker". Editing a field removes its tag.
 
-For any other symbol nothing is pre-filled. If the symbol starts with XAU, XAG, XPT, XPD, BTC or ETH, or contains a digit, you see: "This looks like a metal, crypto or index symbol. Choose that instrument type and enter the numbers from your platform." For any other unrecognised symbol you see: "Lotcheck does not recognise this as a currency pair, so nothing is filled in for you. Check the instrument type and enter the numbers from your platform."
+For any other symbol nothing is pre-filled, and the fields are shown for you to fill in. If the symbol starts with XAU, XAG, XPT, XPD, BTC or ETH, or contains a digit, you see: "This looks like a metal, crypto or index symbol. Choose that instrument type and enter the numbers from your platform." For any other unrecognised symbol you see: "Lotcheck does not recognise this as a currency pair, so nothing is filled in for you. Check the instrument type and enter the numbers from your platform."
 
 Metals, commodities, indices and crypto never get pre-filled values.
 
@@ -60,7 +60,7 @@ How to check it:
 
 A difference of a few cents can come from the conversion rate. A difference of a factor of 10 or 100 is a wrong contract size or pip size.
 
-Tick the box "I have checked these numbers in my platform" only after you have done this. It is required for every instrument type, forex included. No lot size is shown until it is ticked. The hint under it says: "Required before any lot size is shown. Changing the account currency or a field in this card unticks it." If a symbol caution is showing, the result card repeats it above the lot size.
+Tick the box "I have checked these numbers in my platform" only after you have done this. It is required for every instrument type, forex included. No lot size is shown until it is ticked. The hint under it says: "Required before any lot size is shown. Changing the account currency or any instrument field unticks it." Next does not leave the Instrument step until the box is ticked. If a symbol caution is showing, the Result step repeats it above the lot size.
 
 ## Extra distance and commission
 
@@ -69,7 +69,9 @@ Tick the box "I have checked these numbers in my platform" only after you have d
 
 ## Remember my inputs
 
-If you tick "Remember my inputs", the page keeps some fields in this browser only. The hint says: "Saves your account currency, risk setting, instrument type, symbol, currencies, contract size, pip size, lot sizes and leverage in this browser only. Balance, prices, commission and loss-limit values are never saved, because they change."
+If you tick "Remember my inputs in this browser" on the Result step, the page keeps some fields in this browser only. The hint says: "Saves your account currency, risk setting, instrument type, symbol, currencies, contract size, pip size, lot sizes and leverage in this browser only. Balance, prices, commission and loss-limit values are never saved, because they change."
+
+While the box is ticked, the Account step shows the line "Inputs saved in this browser were filled in." with a "Forget saved inputs" button. The same button sits on the Result step. Either one removes the saved inputs from this browser and unticks the box.
 
 ## Common traps
 

@@ -15,7 +15,7 @@ Lotcheck is one offline file. In plain words:
 - It has no network access. The page contains no code that sends or fetches anything.
 - It uses no third-party code and has no dependencies.
 - What you type is never inserted into the page as HTML. Output is written as plain text only.
-- It can optionally remember some inputs in your browser's local storage, under one key (`lotcheck:v1`), if you tick "Remember my inputs". This is off by default. Saved: account currency, risk mode and value, instrument type, symbol, base currency, quote currency, contract size, pip size, minimum lot, lot step, maximum lot and leverage. Never saved: balance, conversion pair choice and price, entry, stop, extra distance, commission, every loss-limits field, and the "I have checked" box. Nothing else is stored. A button removes the saved inputs.
+- It can optionally remember some inputs in your browser's local storage, under one key (`lotcheck:v1`), if you tick "Remember my inputs". This is off by default. Saved: account currency, risk mode and value, instrument type, symbol, base currency, quote currency, contract size, pip size, minimum lot, lot step, maximum lot and leverage. Never saved: balance, conversion pair choice and price, entry, stop, extra distance, commission, every loss-limits field, the answer to the loss-limits question, and the "I have checked" box. Nothing else is stored. A button removes the saved inputs.
 
 ## Reporting a vulnerability
 
